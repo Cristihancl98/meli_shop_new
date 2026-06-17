@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Guía: Conectar Tienda MeLi — Marketplace Manager</title>
+  <style>
+    :root {
+      --bg: #0f1117; --surface: #1a1d27; --surface2: #22263a; --border: #2e3250;
+      --accent: #4f6ef7; --accent2: #7c3aed; --green: #22c55e; --yellow: #eab308;
+      --red: #ef4444; --orange: #f97316; --text: #e2e8f0; --text-muted: #94a3b8;
+      --code-bg: #12141e; --radius: 10px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; font-size: 14px; line-height: 1.6; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .layout { display: flex; min-height: 100vh; }
+    .sidebar { width: 260px; background: var(--surface); border-right: 1px solid var(--border); position: fixed; top: 0; left: 0; height: 100vh; overflow-y: auto; padding: 24px 0; }
+    .main { margin-left: 260px; padding: 40px; max-width: 1000px; }
+
+    .sidebar-logo { padding: 0 20px 24px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+    .sidebar-logo h1 { font-size: 15px; font-weight: 700; color: var(--text); }
+    .sidebar-logo span { font-size: 11px; color: var(--text-muted); }
+    .nav-section { padding: 8px 20px 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--text-muted); }
+    .nav-item { display: flex; align-items: center; gap: 8px; padding: 7px 20px; color: var(--text-muted); font-size: 13px; border-left: 3px solid transparent; }
+    .nav-item:hover { background: var(--surface2); color: var(--text); }
+    .nav-item.active { color: var(--accent); border-left-color: var(--accent); background: var(--surface2); }
+
+    .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+    .badge-get { background: #1e3a5f; color: #60a5fa; }
+    .badge-post { background: #14532d; color: var(--green); }
+    .badge-tip { background: #2e1065; color: #c4b5fd; }
+    .badge-warn { background: #422006; color: var(--orange); }
+
+    .section { margin-bottom: 52px; }
+    .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+    .section-header h2 { font-size: 20px; font-weight: 700; }
+    .section-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+    .icon-blue { background: #1e3a5f; } .icon-purple { background: #2e1065; }
+    .icon-green { background: #14532d; } .icon-yellow { background: #422006; }
+    .icon-teal { background: #134e4a; }
+
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
+    .card h3 { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+    .card p { color: var(--text-muted); font-size: 13px; }
+
+    pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 16px; overflow-x: auto; font-family: 'Cascadia Code', 'Courier New', monospace; font-size: 12px; line-height: 1.7; margin: 12px 0; }
+    code { font-family: 'Cascadia Code', 'Courier New', monospace; background: var(--code-bg); padding: 2px 6px; border-radius: 4px; font-size: 12px; color: #93c5fd; }
+
+    .info-box { border-radius: 8px; padding: 12px 16px; margin: 12px 0; font-size: 13px; display: flex; gap: 10px; align-items: flex-start; }
+    .info-box.info { background: #1e3a5f22; border: 1px solid #1e3a5f; }
+    .info-box.warning { background: #42200622; border: 1px solid #78350f; }
+    .info-box.success { background: #14532d22; border: 1px solid #166534; }
+    .info-box.purple { background: #2e106522; border: 1px solid #5b21b6; }
+    .info-icon { font-size: 16px; flex-shrink: 0; }
+
+    /* Steps */
+    .steps { list-style: none; counter-reset: step; }
+    .step { counter-increment: step; display: flex; gap: 16px; margin-bottom: 24px; }
+    .step-num { width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: #fff; font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+    .step-num::before { content: counter(step); }
+    .step-body { flex: 1; }
+    .step-title { font-weight: 700; font-size: 14px; margin-bottom: 6px; }
+    .step-desc { color: var(--text-muted); font-size: 13px; }
+
+    /* Flow */
+    .flow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 16px; background: var(--code-bg); border-radius: 8px; margin: 12px 0; }
+    .flow-step { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 8px 14px; font-size: 12px; text-align: center; line-height: 1.4; }
+    .flow-arrow { color: var(--accent); font-size: 18px; flex-shrink: 0; }
+    .flow-step.highlight { border-color: var(--accent); background: #1e3a5f44; }
+
+    /* Multi-account grid */
+    .account-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin: 12px 0; }
+    .account-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
+    .account-card .acc-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .acc-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent2)); display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700; flex-shrink: 0; }
+    .acc-name { font-size: 13px; font-weight: 600; }
+    .acc-id { font-size: 11px; color: var(--text-muted); font-family: monospace; }
+    .acc-status { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--green); margin-right: 4px; }
+    .acc-status.inactive { background: var(--red); }
+    .acc-meta { font-size: 11px; color: var(--text-muted); }
+
+    .table { width: 100%; border-collapse: collapse; font-size: 12px; margin: 12px 0; }
+    .table th { background: var(--surface2); color: var(--text-muted); padding: 8px 12px; text-align: left; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; }
+    .table td { padding: 8px 12px; border-bottom: 1px solid var(--border); }
+    .table tr:last-child td { border-bottom: none; }
+
+    @media (max-width: 768px) { .sidebar { display: none; } .main { margin-left: 0; padding: 20px; } }
+  </style>
+</head>
+<body>
+<div class="layout">
+
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <h1>Marketplace Manager</h1>
+      <span>Guía: Conectar Tienda MeLi</span>
+    </div>
+    <div class="nav-section">Contenido</div>
+    <a href="#prerequisitos" class="nav-item active">Prerequisitos</a>
+    <a href="#registrar-app" class="nav-item">1. Registrar App en MeLi</a>
+    <a href="#configurar-env" class="nav-item">2. Configurar .env</a>
+    <a href="#flujo-oauth" class="nav-item">3. Flujo OAuth2</a>
+    <a href="#conectar-ui" class="nav-item">4. Conectar desde la UI</a>
+    <a href="#multi-tienda" class="nav-item">5. Gestionar Múltiples Tiendas</a>
+    <a href="#tokens" class="nav-item">6. Tokens y Renovación</a>
+    <a href="#troubleshooting" class="nav-item">Solución de Problemas</a>
+    <div class="nav-section">Navegación</div>
+    <a href="index.html" class="nav-item">← Documentación Principal</a>
+    <a href="guia-gestionar-producto.html" class="nav-item">Guía: Gestionar Producto</a>
+    <a href="guia-sincronizar-tienda.html" class="nav-item">Guía: Sincronizar Tienda</a>
+  </nav>
+
+  <main class="main">
+
+    <!-- HEADER -->
+    <section class="section" id="prerequisitos">
+      <div class="section-header">
+        <div class="section-icon icon-blue">🔗</div>
+        <h2>Conectar una Tienda de Mercado Libre</h2>
+      </div>
+
+      <div class="info-box success">
+        <span class="info-icon">✅</span>
+        <span>Un usuario puede conectar <strong>N cuentas de MeLi</strong>. Cada cuenta es independiente y tiene sus propios productos, órdenes y estadísticas.</span>
+      </div>
+
+      <div class="card">
+        <h3>Prerequisitos</h3>
+        <ul style="padding-left:18px; color:var(--text-muted); font-size:13px; line-height:2.2;">
+          <li>Aplicación Laravel funcionando localmente (<code>php artisan serve</code>)</li>
+          <li>Cuenta de <strong>Mercado Libre Colombia</strong> activa como vendedor</li>
+          <li>Acceso al portal de desarrolladores de MeLi</li>
+          <li>Variables de entorno configuradas en <code>.env</code></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- PASO 1: REGISTRAR APP -->
+    <section class="section" id="registrar-app">
+      <div class="section-header">
+        <div class="section-icon icon-purple">1️⃣</div>
+        <h2>Registrar la App en el Portal de Desarrolladores</h2>
+      </div>
+
+      <div class="info-box info">
+        <span class="info-icon">ℹ️</span>
+        <span>Debes crear una aplicación en el portal de desarrolladores de MeLi para obtener las credenciales OAuth2. Este paso se hace una sola vez por proyecto.</span>
+      </div>
+
+      <ol class="steps">
+        <li class="step">
+          <div class="step-num"></div>
+          <div class="step-body">
+            <div class="step-title">Ingresar al portal de desarrolladores</div>
+            <div class="step-desc">Ir a <code>developers.mercadolibre.com.co</code> e iniciar sesión con la cuenta de MeLi Colombia que usarás como cuenta principal.</div>
+          </div>
+        </li>
+        <li class="step">
+          <div class="step-num"></div>
+          <div class="step-body">
+            <div class="step-title">Crear una nueva aplicación</div>
+            <div class="step-desc">Ir a <strong>Mis Aplicaciones → Crear Aplicación</strong>. Completar nombre, descripción corta y seleccionar <strong>Colombia (MCO)</strong> como país.</div>
+          </div>
+        </li>
+        <li class="step">
+          <div class="step-num"></div>
+          <div class="step-body">
+            <div class="step-title">Configurar el Redirect URI</div>
+            <div class="step-desc">En la sección <strong>URLs de redireccionamiento</strong>, agregar exactamente la siguiente URL:
+              <pre>http://localhost:8000/meli/callback</pre>
+              Para producción, cambiar por: <code>https://tudominio.com/meli/callback</code>
+            </div>
+          </div>
+        </li>
+        <li class="step">
+          <div class="step-num"></div>
+          <div class="step-body">
+            <div class="step-title">Activar los Scopes requeridos</div>
+            <div class="step-desc">En la sección <strong>Permisos</strong>, habilitar los siguientes scopes:
+              <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">
+                <span class="badge badge-tip">read</span>
+                <span class="badge badge-tip">write</span>
+                <span class="badge badge-tip">offline_access</span>
+              </div>
+              <p style="margin-top:8px; font-size:12px; color:var(--text-muted);">El scope <code>offline_access</code> es necesario para obtener el <code>refresh_token</code> y mantener la sesión activa.</p>
+            </div>
+          </div>
+        </li>
+        <li class="step">
+          <div class="step-num"></div>
+          <div class="step-body">
+            <div class="step-title">Copiar Client ID y Client Secret</div>
+            <div class="step-desc">Después de guardar, la plataforma muestra el <code>APP_ID</code> (Client ID) y el <code>Secret Key</code> (Client Secret). Guardar estos valores.</div>
+          </div>
+        </li>
+      </ol>
+    </section>
+
+    <!-- PASO 2: CONFIGURAR ENV -->
+    <section class="section" id="configurar-env">
+      <div class="section-header">
+        <div class="section-icon icon-yellow">2️⃣</div>
+        <h2>Configurar Variables de Entorno</h2>
+      </div>
+
+      <div class="card">
+        <h3>Variables MeLi en <code>.env</code></h3>
+        <pre># MercadoLibre Colombia (MCO)
+MELI_CLIENT_ID=<span style="color:#fbbf24;">tu_app_id_aqui</span>
+MELI_CLIENT_SECRET=<span style="color:#fbbf24;">tu_secret_key_aqui</span>
+MELI_REDIRECT_URI=http://localhost:8000/meli/callback</pre>
+      </div>
+
+      <div class="card">
+        <h3>Configuración en <code>config/services.php</code></h3>
+        <p style="margin-bottom:8px;">El archivo ya tiene el bloque configurado para leer las variables del <code>.env</code>:</p>
+        <pre>'mercadolibre' => [
+    'client_id'    => env('MELI_CLIENT_ID'),
+    'client_secret'=> env('MELI_CLIENT_SECRET'),
+    'redirect_uri' => env('MELI_REDIRECT_URI'),
+    'auth_url'     => 'https://auth.mercadolibre.com.co/authorization',
+    'token_url'    => 'https://api.mercadolibre.com/oauth/token',
+    'api_base'     => 'https://api.mercadolibre.com',
+    'country_code' => 'MCO',
+],</pre>
+      </div>
+
+      <div class="info-box warning">
+        <span class="info-icon">⚠️</span>
+        <span>Después de modificar el <code>.env</code>, limpiar el caché: <code>php artisan config:clear</code></span>
+      </div>
+    </section>
+
+    <!-- PASO 3: FLUJO OAUTH -->
+    <section class="section" id="flujo-oauth">
+      <div class="section-header">
+        <div class="section-icon icon-green">3️⃣</div>
+        <h2>Flujo de Autorización OAuth2</h2>
+      </div>
+
+      <p style="color:var(--text-muted); margin-bottom:16px; font-size:13px;">
+        La conexión usa OAuth2 Authorization Code Grant. El flujo completo tiene 5 pasos que ocurren automáticamente:
+      </p>
+
+      <div class="flow">
+        <div class="flow-step highlight">Usuario hace clic<br>"Conectar con MeLi"</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">GET /meli/connect<br>Genera URL OAuth</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">Redirect a<br>mercadolibre.com.co<br>/authorization</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">Usuario autoriza<br>en MeLi</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">GET /meli/callback<br>?code=xxxxx</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step highlight">Tokens guardados<br>en BD</div>
+      </div>
+
+      <div class="card">
+        <h3>¿Qué hace <code>GET /meli/connect</code>?</h3>
+        <p style="margin-bottom:10px;">Construye la URL de autorización con los parámetros requeridos y redirige al usuario:</p>
+        <pre>https://auth.mercadolibre.com.co/authorization
+  ?response_type=code
+  &client_id={MELI_CLIENT_ID}
+  &redirect_uri={MELI_REDIRECT_URI}
+  &scope=read+write+offline_access</pre>
+        <div class="info-box info" style="margin-top:10px;">
+          <span class="info-icon">ℹ️</span>
+          <span>Este endpoint requiere autenticación JWT — el usuario debe estar logueado en el panel antes de conectar su tienda MeLi.</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>¿Qué hace <code>GET /meli/callback</code>?</h3>
+        <p style="margin-bottom:10px;">MeLi redirige aquí con un <code>code</code> temporal. El sistema:</p>
+        <ol style="padding-left:18px; color:var(--text-muted); font-size:13px; line-height:2.2;">
+          <li>Intercambia el <code>code</code> por <code>access_token</code> y <code>refresh_token</code></li>
+          <li>Llama <code>GET /users/me</code> para obtener el <code>meli_user_id</code> y nickname de la cuenta</li>
+          <li>Guarda o actualiza el registro en <code>mercadolibre_accounts</code></li>
+          <li>Redirige al usuario al dashboard con mensaje de éxito</li>
+        </ol>
+      </div>
+
+      <div class="card">
+        <h3>Datos guardados en <code>mercadolibre_accounts</code></h3>
+        <table class="table">
+          <thead><tr><th>Campo</th><th>Valor</th></tr></thead>
+          <tbody>
+            <tr><td><code>user_id</code></td><td>ID del usuario del panel (FK)</td></tr>
+            <tr><td><code>meli_user_id</code></td><td>ID del vendedor en MeLi (ej: 123456789)</td></tr>
+            <tr><td><code>nickname</code></td><td>Nickname en MeLi (ej: TIENDA_EJEMPLO_CO)</td></tr>
+            <tr><td><code>access_token</code></td><td>Token de acceso (válido 6 horas)</td></tr>
+            <tr><td><code>refresh_token</code></td><td>Token de renovación (larga duración)</td></tr>
+            <tr><td><code>expires_at</code></td><td>Timestamp de expiración del access_token</td></tr>
+            <tr><td><code>is_active</code></td><td>true — la cuenta queda activa automáticamente</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- PASO 4: CONECTAR DESDE LA UI -->
+    <section class="section" id="conectar-ui">
+      <div class="section-header">
+        <div class="section-icon icon-teal">4️⃣</div>
+        <h2>Conectar una Tienda desde la Interfaz</h2>
+      </div>
+
+      <ol class="steps">
+        <li class="step">
+          <div class="step-num"></div>
+          <div class="step-body">
+            <div class="step-title">Iniciar sesión en el panel</div>
+            <div class="step-desc">
+              Abrir <code>http://localhost:8000</code> e ingresar con las credenciales de administrador:
+              <pre>Email:    admin@marketplace.com
+Password: password</pre>
+            </div>
+          </div>
+        </li>
+        <li class="step">
+          <div class="step-num"></div>
+          <div class="step-body">
+            <div class="step-title">Ir a "Mis Tiendas"</div>
+            <div class="step-desc">En el menú lateral izquierdo, buscar la sección <strong>Tiendas MeLi</strong> y hacer clic en <strong>Mis Tiendas</strong>.</div>
+          </div>
+        </li>
+        <li class="step">
+          <div class="step-num"></div>
+          <div class="step-body">
+            <div class="step-title">Hacer clic en "Conectar con MeLi"</div>
+            <div class="step-desc">El botón genera la URL OAuth y redirige automáticamente al portal de autorización de Mercado Libre Colombia.</div>
+          </div>
+        </li>
+        <li class="step">
+          <div class="step-num"></div>
+          <div class="step-body">
+            <div class="step-title">Autorizar la aplicación en MeLi</div>
+            <div class="step-desc">En la pantalla de MeLi, revisar los permisos solicitados (lectura, escritura y acceso offline) y hacer clic en <strong>Permitir</strong>.</div>
+          </div>
+        </li>
+        <li class="step">
+          <div class="step-num"></div>
+          <div class="step-body">
+            <div class="step-title">Confirmación y redirección</div>
+            <div class="step-desc">El sistema redirige de vuelta al panel. La tienda aparece como <strong>Activa</strong> en la lista de tiendas conectadas, lista para sincronizar.</div>
+          </div>
+        </li>
+      </ol>
+
+      <div class="info-box success">
+        <span class="info-icon">✅</span>
+        <span>Una vez conectada, la tienda comienza a sincronizarse automáticamente en el próximo ciclo del scheduler (máximo 30 minutos para productos, 10 minutos para órdenes).</span>
+      </div>
+    </section>
+
+    <!-- PASO 5: MULTI-TIENDA -->
+    <section class="section" id="multi-tienda">
+      <div class="section-header">
+        <div class="section-icon icon-purple">5️⃣</div>
+        <h2>Gestionar Múltiples Tiendas</h2>
+      </div>
+
+      <div class="info-box purple">
+        <span class="info-icon">🏪</span>
+        <span>El sistema soporta <strong>N cuentas MeLi por usuario</strong>. Cada cuenta tiene sus propios productos, órdenes, clientes y estadísticas completamente separados.</span>
+      </div>
+
+      <div class="card">
+        <h3>Ejemplo: 3 tiendas conectadas</h3>
+        <div class="account-grid">
+          <div class="account-card">
+            <div class="acc-header">
+              <div class="acc-avatar">T1</div>
+              <div>
+                <div class="acc-name">TIENDA_PRINCIPAL</div>
+                <div class="acc-id">meli_user_id: 123456789</div>
+              </div>
+            </div>
+            <div class="acc-meta"><span class="acc-status"></span>Activa · 245 productos · 89 órdenes</div>
+          </div>
+          <div class="account-card">
+            <div class="acc-header">
+              <div class="acc-avatar" style="background: linear-gradient(135deg,#22c55e,#16a34a);">T2</div>
+              <div>
+                <div class="acc-name">TIENDA_ELECTRONICA</div>
+                <div class="acc-id">meli_user_id: 987654321</div>
+              </div>
+            </div>
+            <div class="acc-meta"><span class="acc-status"></span>Activa · 78 productos · 34 órdenes</div>
+          </div>
+          <div class="account-card">
+            <div class="acc-header">
+              <div class="acc-avatar" style="background: linear-gradient(135deg,#f97316,#ea580c);">T3</div>
+              <div>
+                <div class="acc-name">TIENDA_ROPA</div>
+                <div class="acc-id">meli_user_id: 456789123</div>
+              </div>
+            </div>
+            <div class="acc-meta"><span class="acc-status inactive"></span>Inactiva · Token expirado</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Cómo conectar una segunda tienda</h3>
+        <p style="margin-bottom:12px;">Repetir exactamente el mismo flujo OAuth2. El sistema detecta si la cuenta ya existe por <code>meli_user_id</code>:</p>
+        <ul style="padding-left:18px; color:var(--text-muted); font-size:13px; line-height:2.2;">
+          <li>Si <code>meli_user_id</code> es nuevo → crea un nuevo registro en <code>mercadolibre_accounts</code></li>
+          <li>Si <code>meli_user_id</code> ya existe → actualiza los tokens (reconexión)</li>
+        </ul>
+        <div class="info-box warning" style="margin-top:10px;">
+          <span class="info-icon">⚠️</span>
+          <span>Para conectar una segunda cuenta diferente, usar una <strong>sesión de navegador distinta o modo incógnito</strong> en la pantalla de autorización de MeLi, para que no tome la sesión activa.</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Activar / Desactivar una tienda</h3>
+        <p style="margin-bottom:10px;">Cambiar el campo <code>is_active</code> en la tabla <code>mercadolibre_accounts</code>:</p>
+        <pre>-- Desactivar tienda
+UPDATE mercadolibre_accounts SET is_active = 0 WHERE id = 3;
+
+-- Activar tienda
+UPDATE mercadolibre_accounts SET is_active = 1 WHERE id = 3;</pre>
+        <p style="margin-top:8px; font-size:12px; color:var(--text-muted);">Las tiendas inactivas se excluyen automáticamente de los Jobs de sincronización.</p>
+      </div>
+
+      <div class="card">
+        <h3>Aislamiento de datos entre tiendas</h3>
+        <p style="margin-bottom:10px;">Todos los modelos tienen la columna <code>mercadolibre_account_id</code> que garantiza el aislamiento:</p>
+        <table class="table">
+          <thead><tr><th>Tabla</th><th>Columna de tienda</th><th>Efecto</th></tr></thead>
+          <tbody>
+            <tr><td><code>products</code></td><td><code>mercadolibre_account_id</code></td><td>Productos separados por tienda</td></tr>
+            <tr><td><code>orders</code></td><td><code>mercadolibre_account_id</code></td><td>Ventas separadas por tienda</td></tr>
+            <tr><td><code>customers</code></td><td><code>mercadolibre_account_id</code></td><td>Clientes separados por tienda</td></tr>
+            <tr><td><code>sales_statistics</code></td><td><code>mercadolibre_account_id</code></td><td>Estadísticas por tienda</td></tr>
+            <tr><td><code>sync_logs</code></td><td><code>mercadolibre_account_id</code></td><td>Logs de sync por tienda</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- PASO 6: TOKENS -->
+    <section class="section" id="tokens">
+      <div class="section-header">
+        <div class="section-icon icon-yellow">6️⃣</div>
+        <h2>Tokens y Renovación Automática</h2>
+      </div>
+
+      <div class="card">
+        <h3>Ciclo de vida del access_token</h3>
+        <div class="flow" style="flex-direction:column; align-items:flex-start; gap:12px;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div class="flow-step highlight" style="min-width:180px;">Token válido<br><small style="color:var(--text-muted);">expires_at > ahora + 5min</small></div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">Se usa directamente<br>en cada request a MeLi</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div class="flow-step" style="min-width:180px; border-color:var(--orange);">Token por expirar<br><small style="color:var(--text-muted);">expires_at &lt; ahora + 5min</small></div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">Auto-refresh vía<br>POST /oauth/token</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">Nuevo token guardado<br>+ MeliTokenRefreshed event</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div class="flow-step" style="min-width:180px; border-color:var(--red);">Refresh token inválido<br><small style="color:var(--text-muted);">expiró o fue revocado</small></div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">is_active = false<br>SyncFailed event</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step">Reconectar manualmente<br>desde la UI</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Tiempos de expiración</h3>
+        <table class="table">
+          <thead><tr><th>Token</th><th>Duración</th><th>Renovación</th></tr></thead>
+          <tbody>
+            <tr><td><code>access_token</code></td><td>6 horas</td><td>Automática con refresh_token</td></tr>
+            <tr><td><code>refresh_token</code></td><td>6 meses</td><td>Manual: reconectar desde la UI</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- TROUBLESHOOTING -->
+    <section class="section" id="troubleshooting">
+      <div class="section-header">
+        <div class="section-icon icon-blue">🔧</div>
+        <h2>Solución de Problemas</h2>
+      </div>
+
+      <div class="card">
+        <h3>Error: "redirect_uri no coincide"</h3>
+        <p>La URL configurada en el portal de MeLi developers no coincide exactamente con <code>MELI_REDIRECT_URI</code> en el <code>.env</code>. Verificar que sean idénticas, incluyendo el protocolo (<code>http</code> vs <code>https</code>) y la barra final.</p>
+      </div>
+
+      <div class="card">
+        <h3>Error 401 al llamar la API de MeLi</h3>
+        <p>El <code>access_token</code> expiró y el refresh falló. Revisar el <code>sync_logs</code> con <code>status = 'error'</code> y reconectar la cuenta desde la UI.</p>
+        <pre>-- Ver últimos errores de sync
+SELECT * FROM sync_logs
+WHERE status = 'error'
+ORDER BY created_at DESC
+LIMIT 10;</pre>
+      </div>
+
+      <div class="card">
+        <h3>La tienda no aparece después del callback</h3>
+        <ul style="padding-left:18px; color:var(--text-muted); font-size:13px; line-height:2.2;">
+          <li>Verificar que el Queue Worker esté corriendo: <code>php artisan queue:listen</code></li>
+          <li>Revisar el log de Laravel: <code>storage/logs/laravel.log</code></li>
+          <li>Confirmar que <code>MELI_CLIENT_ID</code> y <code>MELI_CLIENT_SECRET</code> son correctos</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>Reiniciar la conexión de una tienda</h3>
+        <p style="margin-bottom:8px;">Si necesitas reconectar una tienda existente (tokens inválidos), simplemente repetir el flujo OAuth2. El sistema actualizará los tokens automáticamente por <code>meli_user_id</code>.</p>
+        <pre>-- Verificar estado de las cuentas
+SELECT id, meli_user_id, nickname, is_active, expires_at
+FROM mercadolibre_accounts
+WHERE user_id = 1;</pre>
+      </div>
+    </section>
+
+    <footer style="border-top:1px solid var(--border);padding-top:24px;color:var(--text-muted);font-size:11px;text-align:center;margin-top:40px;">
+      Marketplace Manager MeLi Colombia · <a href="index.html">Volver a Documentación Principal</a>
+    </footer>
+
+  </main>
+</div>
+</body>
+</html>

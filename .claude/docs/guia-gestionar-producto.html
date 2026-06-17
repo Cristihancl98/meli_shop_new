@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Guía: Gestionar Producto — Marketplace Manager</title>
+  <style>
+    :root {
+      --bg: #0f1117; --surface: #1a1d27; --surface2: #22263a; --border: #2e3250;
+      --accent: #4f6ef7; --accent2: #7c3aed; --green: #22c55e; --yellow: #eab308;
+      --red: #ef4444; --orange: #f97316; --text: #e2e8f0; --text-muted: #94a3b8;
+      --code-bg: #12141e; --radius: 10px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; font-size: 14px; line-height: 1.6; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .layout { display: flex; min-height: 100vh; }
+    .sidebar { width: 260px; background: var(--surface); border-right: 1px solid var(--border); position: fixed; top: 0; left: 0; height: 100vh; overflow-y: auto; padding: 24px 0; }
+    .main { margin-left: 260px; padding: 40px; max-width: 1000px; }
+
+    .sidebar-logo { padding: 0 20px 24px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+    .sidebar-logo h1 { font-size: 15px; font-weight: 700; color: var(--text); }
+    .sidebar-logo span { font-size: 11px; color: var(--text-muted); }
+    .nav-section { padding: 8px 20px 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--text-muted); }
+    .nav-item { display: flex; align-items: center; gap: 8px; padding: 7px 20px; color: var(--text-muted); font-size: 13px; border-left: 3px solid transparent; }
+    .nav-item:hover { background: var(--surface2); color: var(--text); }
+    .nav-item.active { color: var(--accent); border-left-color: var(--accent); background: var(--surface2); }
+
+    .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+    .badge-get { background: #1e3a5f; color: #60a5fa; }
+    .badge-post { background: #14532d; color: var(--green); }
+    .badge-put { background: #422006; color: var(--orange); }
+    .badge-delete { background: #450a0a; color: var(--red); }
+    .badge-admin { background: #2e1065; color: #c4b5fd; }
+    .badge-operator { background: #134e4a; color: #5eead4; }
+    .badge-active { background: #14532d; color: var(--green); }
+    .badge-paused { background: #422006; color: var(--orange); }
+    .badge-closed { background: #1c1c1c; color: var(--text-muted); }
+
+    .section { margin-bottom: 52px; }
+    .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+    .section-header h2 { font-size: 20px; font-weight: 700; }
+    .section-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+    .icon-blue { background: #1e3a5f; } .icon-purple { background: #2e1065; }
+    .icon-green { background: #14532d; } .icon-yellow { background: #422006; }
+    .icon-red { background: #450a0a; } .icon-teal { background: #134e4a; }
+
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
+    .card h3 { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+    .card p { color: var(--text-muted); font-size: 13px; }
+
+    pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 16px; overflow-x: auto; font-family: 'Cascadia Code', 'Courier New', monospace; font-size: 12px; line-height: 1.7; margin: 12px 0; }
+    code { font-family: 'Cascadia Code', 'Courier New', monospace; background: var(--code-bg); padding: 2px 6px; border-radius: 4px; font-size: 12px; color: #93c5fd; }
+
+    .info-box { border-radius: 8px; padding: 12px 16px; margin: 12px 0; font-size: 13px; display: flex; gap: 10px; align-items: flex-start; }
+    .info-box.info { background: #1e3a5f22; border: 1px solid #1e3a5f; }
+    .info-box.warning { background: #42200622; border: 1px solid #78350f; }
+    .info-box.success { background: #14532d22; border: 1px solid #166534; }
+    .info-box.danger { background: #45090922; border: 1px solid #991b1b; }
+    .info-icon { font-size: 16px; flex-shrink: 0; }
+
+    .steps { list-style: none; counter-reset: step; }
+    .step { counter-increment: step; display: flex; gap: 16px; margin-bottom: 20px; }
+    .step-num { width: 30px; height: 30px; border-radius: 50%; background: var(--accent); color: #fff; font-weight: 700; font-size: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+    .step-num::before { content: counter(step); }
+    .step-body { flex: 1; }
+    .step-title { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+    .step-desc { color: var(--text-muted); font-size: 13px; }
+
+    .flow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 16px; background: var(--code-bg); border-radius: 8px; margin: 12px 0; }
+    .flow-step { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 8px 14px; font-size: 12px; text-align: center; line-height: 1.4; }
+    .flow-arrow { color: var(--accent); font-size: 18px; flex-shrink: 0; }
+    .flow-step.highlight { border-color: var(--accent); background: #1e3a5f44; }
+
+    .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 0; }
+    .field-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
+    .field-name { font-family: monospace; color: #93c5fd; font-size: 12px; margin-bottom: 4px; }
+    .field-type { font-size: 11px; color: var(--accent2); margin-bottom: 4px; }
+    .field-desc { font-size: 11px; color: var(--text-muted); }
+    .field-required { color: var(--red); font-size: 10px; font-weight: 700; }
+    .field-optional { color: var(--text-muted); font-size: 10px; }
+
+    .table { width: 100%; border-collapse: collapse; font-size: 12px; margin: 12px 0; }
+    .table th { background: var(--surface2); color: var(--text-muted); padding: 8px 12px; text-align: left; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; }
+    .table td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .table tr:last-child td { border-bottom: none; }
+
+    .perm-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 0; }
+    .perm-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
+    .perm-role { font-weight: 700; font-size: 13px; margin-bottom: 8px; }
+    .perm-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+    .perm-ok { color: var(--green); }
+    .perm-no { color: var(--red); }
+
+    @media (max-width: 768px) {
+      .sidebar { display: none; } .main { margin-left: 0; padding: 20px; }
+      .field-grid { grid-template-columns: 1fr; }
+      .perm-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="layout">
+
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <h1>Marketplace Manager</h1>
+      <span>Guía: Gestionar Productos</span>
+    </div>
+    <div class="nav-section">Contenido</div>
+    <a href="#permisos" class="nav-item active">Permisos por Rol</a>
+    <a href="#listar" class="nav-item">Ver Listado de Productos</a>
+    <a href="#crear" class="nav-item">Crear Producto</a>
+    <a href="#editar" class="nav-item">Editar Producto</a>
+    <a href="#eliminar" class="nav-item">Eliminar Producto</a>
+    <a href="#estados" class="nav-item">Estados del Producto</a>
+    <a href="#api" class="nav-item">API REST</a>
+    <div class="nav-section">Navegación</div>
+    <a href="index.html" class="nav-item">← Documentación Principal</a>
+    <a href="guia-conectar-tienda.html" class="nav-item">Guía: Conectar Tienda</a>
+    <a href="guia-sincronizar-tienda.html" class="nav-item">Guía: Sincronizar Tienda</a>
+  </nav>
+
+  <main class="main">
+
+    <!-- HEADER -->
+    <section class="section" id="permisos">
+      <div class="section-header">
+        <div class="section-icon icon-green">📦</div>
+        <h2>Gestión de Productos</h2>
+      </div>
+
+      <div class="info-box info">
+        <span class="info-icon">ℹ️</span>
+        <span>Los productos se crean en el panel y se publican automáticamente en Mercado Libre Colombia. Toda imagen se sube primero a <strong>AWS S3</strong> y luego se sincroniza con MeLi.</span>
+      </div>
+
+      <div class="card">
+        <h3>Permisos por Rol</h3>
+        <div class="perm-grid">
+          <div class="perm-card">
+            <div class="perm-role"><span class="badge badge-admin">Admin</span></div>
+            <div class="perm-item"><span class="perm-ok">✓</span> Ver listado y detalle de productos</div>
+            <div class="perm-item"><span class="perm-ok">✓</span> Crear nuevos productos</div>
+            <div class="perm-item"><span class="perm-ok">✓</span> Editar productos existentes</div>
+            <div class="perm-item"><span class="perm-ok">✓</span> Eliminar productos</div>
+            <div class="perm-item"><span class="perm-ok">✓</span> Forzar sincronización</div>
+          </div>
+          <div class="perm-card">
+            <div class="perm-role"><span class="badge badge-operator">Operador</span></div>
+            <div class="perm-item"><span class="perm-ok">✓</span> Ver listado de productos</div>
+            <div class="perm-item"><span class="perm-ok">✓</span> Ver detalle de un producto</div>
+            <div class="perm-item"><span class="perm-no">✗</span> Crear productos</div>
+            <div class="perm-item"><span class="perm-no">✗</span> Editar productos</div>
+            <div class="perm-item"><span class="perm-no">✗</span> Eliminar productos</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LISTAR -->
+    <section class="section" id="listar">
+      <div class="section-header">
+        <div class="section-icon icon-blue">📋</div>
+        <h2>Ver Listado de Productos</h2>
+      </div>
+
+      <div class="card">
+        <h3>URL de acceso</h3>
+        <pre>Vista web:   GET /products
+API REST:    GET /api/products</pre>
+      </div>
+
+      <div class="card">
+        <h3>Filtros disponibles</h3>
+        <table class="table">
+          <thead><tr><th>Parámetro</th><th>Tipo</th><th>Descripción</th><th>Ejemplo</th></tr></thead>
+          <tbody>
+            <tr><td><code>search</code></td><td>string</td><td>Busca en título del producto</td><td><code>?search=camisa</code></td></tr>
+            <tr><td><code>status</code></td><td>enum</td><td>Filtrar por estado</td><td><code>?status=active</code></td></tr>
+            <tr><td><code>category_id</code></td><td>integer</td><td>Filtrar por categoría MeLi</td><td><code>?category_id=5</code></td></tr>
+            <tr><td><code>min_price</code></td><td>decimal</td><td>Precio mínimo en COP</td><td><code>?min_price=50000</code></td></tr>
+            <tr><td><code>max_price</code></td><td>decimal</td><td>Precio máximo en COP</td><td><code>?max_price=200000</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h3>Paginación</h3>
+        <p>Siempre 20 registros por página. Navegar con el parámetro <code>?page=2</code>.</p>
+        <pre>GET /api/products?status=active&search=zapatos&page=2</pre>
+      </div>
+    </section>
+
+    <!-- CREAR -->
+    <section class="section" id="crear">
+      <div class="section-header">
+        <div class="section-icon icon-green">➕</div>
+        <h2>Crear un Producto</h2>
+      </div>
+
+      <div class="info-box warning">
+        <span class="info-icon">⚠️</span>
+        <span>Solo el rol <strong>Admin</strong> puede crear productos. Al crearlo en el panel, se publica automáticamente en Mercado Libre Colombia.</span>
+      </div>
+
+      <h3 style="font-size:14px; margin-bottom:12px;">Flujo de creación</h3>
+      <div class="flow">
+        <div class="flow-step highlight">Formulario<br>/products/create</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">Validación<br>StoreProductRequest</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">Subir imagen<br>a AWS S3</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">Publicar en<br>MeLi API</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">Guardar en<br>base de datos</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step highlight">Producto activo<br>en MeLi</div>
+      </div>
+
+      <div class="card">
+        <h3>Campos del formulario</h3>
+        <div class="field-grid">
+          <div class="field-item">
+            <div class="field-name">title <span class="field-required">requerido</span></div>
+            <div class="field-type">string, max:255</div>
+            <div class="field-desc">Título del anuncio en MeLi. Visible para compradores.</div>
+          </div>
+          <div class="field-item">
+            <div class="field-name">price <span class="field-required">requerido</span></div>
+            <div class="field-type">decimal, min:0</div>
+            <div class="field-desc">Precio en pesos colombianos (COP). Ejemplo: 89900.00</div>
+          </div>
+          <div class="field-item">
+            <div class="field-name">stock <span class="field-required">requerido</span></div>
+            <div class="field-type">integer, min:0</div>
+            <div class="field-desc">Unidades disponibles. 0 = sin stock (pausa automática en MeLi).</div>
+          </div>
+          <div class="field-item">
+            <div class="field-name">condition <span class="field-required">requerido</span></div>
+            <div class="field-type">enum: new / used</div>
+            <div class="field-desc">Estado del producto. Obligatorio para MeLi.</div>
+          </div>
+          <div class="field-item">
+            <div class="field-name">listing_type_id <span class="field-required">requerido</span></div>
+            <div class="field-type">enum</div>
+            <div class="field-desc">Tipo de publicación: <code>free</code>, <code>bronze</code>, <code>gold_special</code>, etc.</div>
+          </div>
+          <div class="field-item">
+            <div class="field-name">category_id <span class="field-optional">opcional</span></div>
+            <div class="field-type">integer, FK</div>
+            <div class="field-desc">Categoría MeLi local. Se mapea al <code>meli_category_id</code> para la publicación.</div>
+          </div>
+          <div class="field-item">
+            <div class="field-name">description <span class="field-optional">opcional</span></div>
+            <div class="field-type">string</div>
+            <div class="field-desc">Descripción detallada. Soporta texto largo. Se envía a MeLi.</div>
+          </div>
+          <div class="field-item">
+            <div class="field-name">image <span class="field-optional">opcional</span></div>
+            <div class="field-type">file: jpg/jpeg/png/webp, max 5MB</div>
+            <div class="field-desc">Imagen principal. Se sube a S3 y luego a MeLi via <code>/pictures/items/upload</code>.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Creación via API REST</h3>
+        <p style="margin-bottom:10px;">Enviar como <code>multipart/form-data</code> para incluir la imagen:</p>
+        <pre>POST /api/products
+Authorization: Bearer {token}
+Content-Type: multipart/form-data
+
+title=Camiseta Polo Azul
+price=89900
+stock=50
+condition=new
+listing_type_id=gold_special
+description=Camiseta de algodón 100%...
+image=@/ruta/imagen.jpg</pre>
+      </div>
+
+      <div class="card">
+        <h3>Respuesta exitosa</h3>
+        <pre>{
+  "success": true,
+  "data": {
+    "id": 42,
+    "meli_item_id": "MCO123456789",
+    "title": "Camiseta Polo Azul",
+    "price": "89900.00",
+    "stock": 50,
+    "status": "active",
+    "thumbnail": "https://s3.amazonaws.com/tu-bucket/products/abc123.jpg",
+    "condition": "new",
+    "listing_type_id": "gold_special",
+    "last_sync": "2026-06-16T10:30:00Z"
+  },
+  "message": "Producto creado y publicado en MercadoLibre exitosamente"
+}</pre>
+      </div>
+
+      <div class="info-box info">
+        <span class="info-icon">ℹ️</span>
+        <span>Si la subida de imagen a MeLi falla (error de red), el producto se guarda igualmente en la base de datos con la URL de S3. Se puede forzar una sincronización posterior.</span>
+      </div>
+    </section>
+
+    <!-- EDITAR -->
+    <section class="section" id="editar">
+      <div class="section-header">
+        <div class="section-icon icon-yellow">✏️</div>
+        <h2>Editar un Producto</h2>
+      </div>
+
+      <div class="card">
+        <h3>URL de acceso</h3>
+        <pre>Vista web:   GET  /products/{id}/edit
+Formulario:  POST /products/{id}  (con @method('PUT'))
+API REST:    PUT  /api/products/{id}</pre>
+      </div>
+
+      <h3 style="font-size:14px; margin-bottom:12px;">Flujo de actualización</h3>
+      <div class="flow">
+        <div class="flow-step highlight">Formulario edición<br>/products/{id}/edit</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">Validación<br>UpdateProductRequest</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">Si hay nueva imagen<br>→ subir a S3</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">Actualizar en<br>MeLi API</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step highlight">Actualizar en<br>base de datos</div>
+      </div>
+
+      <div class="card">
+        <h3>Campos editables</h3>
+        <p style="margin-bottom:10px;">Todos los campos del formulario de creación son editables. En la API, usar <code>PUT</code> con solo los campos a modificar (todos son <code>sometimes</code>):</p>
+        <pre>PUT /api/products/42
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "price": 79900,
+  "stock": 35
+}</pre>
+      </div>
+
+      <div class="card">
+        <h3>Cambiar precio desde la UI</h3>
+        <ol class="steps" style="margin-top:8px;">
+          <li class="step">
+            <div class="step-num"></div>
+            <div class="step-body">
+              <div class="step-title">Ir a la lista de productos</div>
+              <div class="step-desc">Navegar a <code>/products</code> y buscar el producto a editar.</div>
+            </div>
+          </li>
+          <li class="step">
+            <div class="step-num"></div>
+            <div class="step-body">
+              <div class="step-title">Abrir el formulario de edición</div>
+              <div class="step-desc">Hacer clic en el botón <strong>Editar</strong> en la tarjeta del producto o desde la página de detalle.</div>
+            </div>
+          </li>
+          <li class="step">
+            <div class="step-num"></div>
+            <div class="step-body">
+              <div class="step-title">Modificar el precio y guardar</div>
+              <div class="step-desc">Cambiar el campo Precio (COP), hacer clic en <strong>Guardar Cambios</strong>. El precio se actualiza en MeLi inmediatamente.</div>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ELIMINAR -->
+    <section class="section" id="eliminar">
+      <div class="section-header">
+        <div class="section-icon icon-red">🗑️</div>
+        <h2>Eliminar un Producto</h2>
+      </div>
+
+      <div class="info-box danger">
+        <span class="info-icon">🚨</span>
+        <span>La eliminación usa <strong>soft delete</strong>. El producto se marca como cerrado en MeLi y se oculta del panel, pero los datos históricos (órdenes, estadísticas) se conservan.</span>
+      </div>
+
+      <div class="card">
+        <h3>¿Qué ocurre al eliminar?</h3>
+        <ol style="padding-left:18px; color:var(--text-muted); font-size:13px; line-height:2.2;">
+          <li>Se llama a la API de MeLi para cambiar el status del ítem a <code>closed</code></li>
+          <li>Se establece <code>deleted_at = now()</code> en la tabla <code>products</code></li>
+          <li>El producto desaparece de todos los listados del panel</li>
+          <li>Los <code>order_items</code> que referencian el producto conservan el <code>product_id</code></li>
+        </ol>
+      </div>
+
+      <div class="card">
+        <h3>Eliminar desde la UI</h3>
+        <p>En la vista de edición (<code>/products/{id}/edit</code>), hacer clic en el botón rojo <strong>Eliminar Producto</strong>. El sistema pide confirmación antes de proceder.</p>
+      </div>
+
+      <div class="card">
+        <h3>Eliminar via API</h3>
+        <pre>DELETE /api/products/42
+Authorization: Bearer {token}
+
+// Respuesta
+{
+  "success": true,
+  "data": null,
+  "message": "Producto eliminado exitosamente"
+}</pre>
+      </div>
+
+      <div class="card">
+        <h3>Recuperar un producto eliminado (soft delete)</h3>
+        <p style="margin-bottom:10px;">Los registros con <code>deleted_at</code> no nulo se pueden restaurar directamente en base de datos:</p>
+        <pre>-- Restaurar producto con ID 42
+UPDATE products SET deleted_at = NULL WHERE id = 42;</pre>
+        <div class="info-box info" style="margin-top:8px;">
+          <span class="info-icon">ℹ️</span>
+          <span>Después de restaurar, hay que sincronizar manualmente el producto para reactivarlo en MeLi: <code>POST /api/products/42/sync</code></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ESTADOS -->
+    <section class="section" id="estados">
+      <div class="section-header">
+        <div class="section-icon icon-teal">🔄</div>
+        <h2>Estados del Producto</h2>
+      </div>
+
+      <div class="card">
+        <h3>Posibles estados y su significado</h3>
+        <table class="table">
+          <thead><tr><th>Estado</th><th>En BD</th><th>En MeLi</th><th>Visible para compradores</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><span class="badge badge-active">active</span></td>
+              <td><code>status = 'active'</code></td>
+              <td>Publicado y activo</td>
+              <td>Sí</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-paused">paused</span></td>
+              <td><code>status = 'paused'</code></td>
+              <td>Pausado por el vendedor o por stock = 0</td>
+              <td>No</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-closed">closed</span></td>
+              <td><code>status = 'closed'</code></td>
+              <td>Cerrado / finalizado</td>
+              <td>No</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h3>Transiciones de estado</h3>
+        <div class="flow" style="flex-direction:column; align-items:flex-start; gap:10px;">
+          <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <span class="badge badge-active">active</span>
+            <span class="flow-arrow" style="font-size:14px;">→</span>
+            <span style="font-size:12px; color:var(--text-muted);">stock llega a 0</span>
+            <span class="flow-arrow" style="font-size:14px;">→</span>
+            <span class="badge badge-paused">paused</span>
+            <span style="font-size:12px; color:var(--text-muted); margin-left:8px;">(automático en MeLi)</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <span class="badge badge-paused">paused</span>
+            <span class="flow-arrow" style="font-size:14px;">→</span>
+            <span style="font-size:12px; color:var(--text-muted);">stock > 0 + sync</span>
+            <span class="flow-arrow" style="font-size:14px;">→</span>
+            <span class="badge badge-active">active</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <span class="badge badge-active">active</span>
+            <span style="font-size:12px; color:var(--text-muted); margin:0 4px;">/</span>
+            <span class="badge badge-paused">paused</span>
+            <span class="flow-arrow" style="font-size:14px;">→</span>
+            <span style="font-size:12px; color:var(--text-muted);">Eliminar desde panel</span>
+            <span class="flow-arrow" style="font-size:14px;">→</span>
+            <span class="badge badge-closed">closed</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- API REST -->
+    <section class="section" id="api">
+      <div class="section-header">
+        <div class="section-icon icon-blue">🔌</div>
+        <h2>Referencia API REST — Productos</h2>
+      </div>
+
+      <div class="card">
+        <table class="table">
+          <thead><tr><th>Método</th><th>Endpoint</th><th>Descripción</th><th>Rol mínimo</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><span class="badge badge-get">GET</span></td>
+              <td><code>/api/products</code></td>
+              <td>Listado paginado con filtros</td>
+              <td><span class="badge badge-operator">Operador</span></td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-get">GET</span></td>
+              <td><code>/api/products/{id}</code></td>
+              <td>Detalle del producto</td>
+              <td><span class="badge badge-operator">Operador</span></td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-post">POST</span></td>
+              <td><code>/api/products</code></td>
+              <td>Crear producto + publicar en MeLi</td>
+              <td><span class="badge badge-admin">Admin</span></td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-put">PUT</span></td>
+              <td><code>/api/products/{id}</code></td>
+              <td>Editar producto + actualizar en MeLi</td>
+              <td><span class="badge badge-admin">Admin</span></td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-delete">DELETE</span></td>
+              <td><code>/api/products/{id}</code></td>
+              <td>Cerrar en MeLi + soft delete</td>
+              <td><span class="badge badge-admin">Admin</span></td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-post">POST</span></td>
+              <td><code>/api/products/{id}/sync</code></td>
+              <td>Forzar sincronización desde MeLi</td>
+              <td><span class="badge badge-admin">Admin</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h3>Headers requeridos en todas las peticiones</h3>
+        <pre>Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...
+Accept: application/json
+Content-Type: application/json   # (o multipart/form-data para subir imagen)</pre>
+      </div>
+
+      <div class="card">
+        <h3>Estructura de respuesta estándar</h3>
+        <pre>{
+  "success": true | false,
+  "data": { ... },          // Objeto o array de resultados
+  "message": "...",         // Mensaje descriptivo en español
+  "errors": { ... }         // Solo presente cuando success=false
+}</pre>
+      </div>
+    </section>
+
+    <footer style="border-top:1px solid var(--border);padding-top:24px;color:var(--text-muted);font-size:11px;text-align:center;margin-top:40px;">
+      Marketplace Manager MeLi Colombia · <a href="index.html">Volver a Documentación Principal</a>
+    </footer>
+
+  </main>
+</div>
+</body>
+</html>

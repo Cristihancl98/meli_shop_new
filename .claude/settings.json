@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls C:/Users/crist/.claude/projects/c--Users-crist-Documents-GitHub-meli-shop-new/memory/ 2>/dev/null || echo \"NO_MEMORY_DIR\")",
+      "Read(//c/Users/crist/.claude/projects/c--Users-crist-Documents-GitHub-meli-shop-new/memory/**)",
+      "Bash(composer show *)",
+      "Bash(php artisan *)",
+      "Bash(mysql -u root -e \"CREATE DATABASE IF NOT EXISTS marketplace_manager CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;\")",
+      "PowerShell(mysql -u root -e \"CREATE DATABASE IF NOT EXISTS marketplace_manager CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;\" 2>&1)",
+      "PowerShell(if \\($?\\) { \"DB created\" } else { \"MySQL not in PATH - trying alternate\" })",
+      "Read(//c/Program Files/**)",
+      "Read(//c//**)",
+      "PowerShell(& \"C:\\\\wamp64\\\\bin\\\\mysql\\\\mysql8.0.40\\\\bin\\\\mysql.exe\" -u root -e \"CREATE DATABASE IF NOT EXISTS marketplace_manager CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; SHOW DATABASES;\" 2>&1)",
+      "Bash(curl -s -X POST http://localhost:8000/api/auth/login -H \"Content-Type: application/json\" -d \"{\\\\\"email\\\\\":\\\\\"admin@marketplace.com\\\\\",\\\\\"password\\\\\":\\\\\"password\\\\\"}\")"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\crist\\.claude\\projects\\c--Users-crist-Documents-GitHub-meli-shop-new\\memory"
+    ]
+  }
+}

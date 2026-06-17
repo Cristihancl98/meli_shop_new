@@ -35,4 +35,14 @@ return [
         ],
     ],
 
+    'mercadolibre' => [
+        'client_id'     => env('MELI_CLIENT_ID'),
+        'client_secret' => env('MELI_CLIENT_SECRET'),
+        'redirect_uri'  => env('MELI_REDIRECT_URI'),
+        'country_code'  => env('MELI_COUNTRY_CODE', 'MCO'),
+        'api_base_url'  => env('MELI_API_BASE_URL', 'https://api.mercadolibre.com'),
+        'auth_url'      => 'https://auth.mercadolibre.com.co/authorization',
+        'token_url'     => 'https://api.mercadolibre.com/oauth/token',
+    ],
+
 ];

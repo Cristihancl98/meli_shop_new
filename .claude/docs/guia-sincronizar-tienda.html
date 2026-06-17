@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Guía: Sincronizar Tienda — Marketplace Manager</title>
+  <style>
+    :root {
+      --bg: #0f1117; --surface: #1a1d27; --surface2: #22263a; --border: #2e3250;
+      --accent: #4f6ef7; --accent2: #7c3aed; --green: #22c55e; --yellow: #eab308;
+      --red: #ef4444; --orange: #f97316; --text: #e2e8f0; --text-muted: #94a3b8;
+      --code-bg: #12141e; --radius: 10px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; font-size: 14px; line-height: 1.6; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .layout { display: flex; min-height: 100vh; }
+    .sidebar { width: 260px; background: var(--surface); border-right: 1px solid var(--border); position: fixed; top: 0; left: 0; height: 100vh; overflow-y: auto; padding: 24px 0; }
+    .main { margin-left: 260px; padding: 40px; max-width: 1000px; }
+
+    .sidebar-logo { padding: 0 20px 24px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+    .sidebar-logo h1 { font-size: 15px; font-weight: 700; color: var(--text); }
+    .sidebar-logo span { font-size: 11px; color: var(--text-muted); }
+    .nav-section { padding: 8px 20px 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--text-muted); }
+    .nav-item { display: flex; align-items: center; gap: 8px; padding: 7px 20px; color: var(--text-muted); font-size: 13px; border-left: 3px solid transparent; }
+    .nav-item:hover { background: var(--surface2); color: var(--text); }
+    .nav-item.active { color: var(--accent); border-left-color: var(--accent); background: var(--surface2); }
+
+    .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+    .badge-get { background: #1e3a5f; color: #60a5fa; }
+    .badge-post { background: #14532d; color: var(--green); }
+    .badge-sync { background: #134e4a; color: #5eead4; }
+    .badge-auto { background: #422006; color: var(--orange); }
+    .badge-manual { background: #2e1065; color: #c4b5fd; }
+    .badge-ok { background: #14532d; color: var(--green); }
+    .badge-error { background: #450a0a; color: var(--red); }
+    .badge-running { background: #1e3a5f; color: #60a5fa; }
+    .badge-pending { background: #1c1c1c; color: var(--text-muted); }
+
+    .section { margin-bottom: 52px; }
+    .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+    .section-header h2 { font-size: 20px; font-weight: 700; }
+    .section-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+    .icon-blue { background: #1e3a5f; } .icon-purple { background: #2e1065; }
+    .icon-green { background: #14532d; } .icon-yellow { background: #422006; }
+    .icon-red { background: #450a0a; } .icon-teal { background: #134e4a; }
+
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
+    .card h3 { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+    .card p { color: var(--text-muted); font-size: 13px; }
+
+    pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 16px; overflow-x: auto; font-family: 'Cascadia Code', 'Courier New', monospace; font-size: 12px; line-height: 1.7; margin: 12px 0; }
+    code { font-family: 'Cascadia Code', 'Courier New', monospace; background: var(--code-bg); padding: 2px 6px; border-radius: 4px; font-size: 12px; color: #93c5fd; }
+
+    .info-box { border-radius: 8px; padding: 12px 16px; margin: 12px 0; font-size: 13px; display: flex; gap: 10px; align-items: flex-start; }
+    .info-box.info { background: #1e3a5f22; border: 1px solid #1e3a5f; }
+    .info-box.warning { background: #42200622; border: 1px solid #78350f; }
+    .info-box.success { background: #14532d22; border: 1px solid #166534; }
+    .info-box.danger { background: #45090922; border: 1px solid #991b1b; }
+    .info-icon { font-size: 16px; flex-shrink: 0; }
+
+    .flow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 16px; background: var(--code-bg); border-radius: 8px; margin: 12px 0; }
+    .flow-step { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 8px 14px; font-size: 12px; text-align: center; line-height: 1.4; }
+    .flow-arrow { color: var(--accent); font-size: 18px; flex-shrink: 0; }
+    .flow-step.highlight { border-color: var(--accent); background: #1e3a5f44; }
+    .flow-step.success { border-color: var(--green); background: #14532d44; }
+
+    .table { width: 100%; border-collapse: collapse; font-size: 12px; margin: 12px 0; }
+    .table th { background: var(--surface2); color: var(--text-muted); padding: 8px 12px; text-align: left; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; }
+    .table td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .table tr:last-child td { border-bottom: none; }
+
+    /* Scheduler grid */
+    .scheduler-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin: 12px 0; }
+    .scheduler-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
+    .scheduler-cmd { font-family: monospace; color: #93c5fd; font-size: 12px; margin-bottom: 6px; }
+    .scheduler-freq { font-size: 11px; color: var(--accent); margin-bottom: 4px; font-weight: 700; }
+    .scheduler-desc { font-size: 11px; color: var(--text-muted); }
+
+    /* Retry */
+    .retry-timeline { display: flex; align-items: center; gap: 0; margin: 16px 0; }
+    .retry-node { text-align: center; }
+    .retry-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--accent); margin: 0 auto 6px; }
+    .retry-dot.fail { background: var(--red); }
+    .retry-dot.success { background: var(--green); }
+    .retry-label { font-size: 10px; color: var(--text-muted); white-space: nowrap; }
+    .retry-line { flex: 1; height: 2px; background: var(--border); position: relative; margin-bottom: 18px; }
+    .retry-wait { position: absolute; top: -14px; left: 50%; transform: translateX(-50%); font-size: 10px; color: var(--orange); white-space: nowrap; font-weight: 700; }
+
+    /* Webhook */
+    .webhook-status { display: flex; align-items: center; gap: 10px; padding: 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 10px; font-size: 12px; }
+    .webhook-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+    @media (max-width: 768px) { .sidebar { display: none; } .main { margin-left: 0; padding: 20px; } }
+  </style>
+</head>
+<body>
+<div class="layout">
+
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <h1>Marketplace Manager</h1>
+      <span>Guía: Sincronizar Tienda</span>
+    </div>
+    <div class="nav-section">Contenido</div>
+    <a href="#overview" class="nav-item active">¿Qué se sincroniza?</a>
+    <a href="#automatica" class="nav-item">Sincronización Automática</a>
+    <a href="#manual" class="nav-item">Sincronización Manual</a>
+    <a href="#webhook" class="nav-item">Webhooks en Tiempo Real</a>
+    <a href="#queue" class="nav-item">Queue Worker</a>
+    <a href="#retry" class="nav-item">Reintentos y Rate Limiting</a>
+    <a href="#logs" class="nav-item">Logs de Sincronización</a>
+    <a href="#multi-cuenta" class="nav-item">Sync Multi-Cuenta</a>
+    <a href="#troubleshooting" class="nav-item">Solución de Problemas</a>
+    <div class="nav-section">Navegación</div>
+    <a href="index.html" class="nav-item">← Documentación Principal</a>
+    <a href="guia-conectar-tienda.html" class="nav-item">Guía: Conectar Tienda</a>
+    <a href="guia-gestionar-producto.html" class="nav-item">Guía: Gestionar Producto</a>
+  </nav>
+
+  <main class="main">
+
+    <!-- OVERVIEW -->
+    <section class="section" id="overview">
+      <div class="section-header">
+        <div class="section-icon icon-teal">🔄</div>
+        <h2>¿Qué se Sincroniza?</h2>
+      </div>
+
+      <div class="info-box success">
+        <span class="info-icon">✅</span>
+        <span>La sincronización es <strong>bidireccional</strong>: el panel lee datos de MeLi y también puede enviar cambios (precio, stock, estado). Todo ocurre en background vía <strong>Jobs en Queue</strong>.</span>
+      </div>
+
+      <div class="card">
+        <h3>Tipos de datos sincronizados</h3>
+        <table class="table">
+          <thead><tr><th>Tipo</th><th>Dirección</th><th>Job</th><th>Frecuencia automática</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>Productos</strong></td>
+              <td>MeLi → Panel</td>
+              <td><code>SyncProductsJob</code></td>
+              <td><span class="badge badge-auto">Cada 30 min</span></td>
+            </tr>
+            <tr>
+              <td><strong>Órdenes</strong></td>
+              <td>MeLi → Panel</td>
+              <td><code>SyncOrdersJob</code></td>
+              <td><span class="badge badge-auto">Cada 10 min</span></td>
+            </tr>
+            <tr>
+              <td><strong>Clientes</strong></td>
+              <td>MeLi → Panel</td>
+              <td><code>SyncCustomersJob</code></td>
+              <td><span class="badge badge-auto">Cada hora</span></td>
+            </tr>
+            <tr>
+              <td><strong>Estadísticas</strong></td>
+              <td>BD interna</td>
+              <td><code>CalculateStatisticsJob</code></td>
+              <td><span class="badge badge-auto">Cada hora</span></td>
+            </tr>
+            <tr>
+              <td><strong>Producto individual</strong></td>
+              <td>MeLi → Panel</td>
+              <td>—</td>
+              <td><span class="badge badge-manual">Manual</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SINCRONIZACIÓN AUTOMÁTICA -->
+    <section class="section" id="automatica">
+      <div class="section-header">
+        <div class="section-icon icon-green">⏰</div>
+        <h2>Sincronización Automática (Scheduler)</h2>
+      </div>
+
+      <div class="card">
+        <h3>Comandos programados</h3>
+        <div class="scheduler-grid">
+          <div class="scheduler-card">
+            <div class="scheduler-cmd">sync:products</div>
+            <div class="scheduler-freq">Cada 30 minutos</div>
+            <div class="scheduler-desc">Trae todos los ítems activos, paused y closed desde MeLi. Crea o actualiza en la BD local.</div>
+          </div>
+          <div class="scheduler-card">
+            <div class="scheduler-cmd">sync:orders</div>
+            <div class="scheduler-freq">Cada 10 minutos</div>
+            <div class="scheduler-desc">Órdenes de las últimas 24h. Crea clientes si no existen. Sincroniza order_items con product_id.</div>
+          </div>
+          <div class="scheduler-card">
+            <div class="scheduler-cmd">sync:customers</div>
+            <div class="scheduler-freq">Cada hora</div>
+            <div class="scheduler-desc">Refresca nombre, email, teléfono y nickname de todos los clientes existentes en la BD.</div>
+          </div>
+          <div class="scheduler-card">
+            <div class="scheduler-cmd">calculate:statistics</div>
+            <div class="scheduler-freq">Cada hora</div>
+            <div class="scheduler-desc">Recalcula sales_statistics y product_statistics agrupando órdenes pagadas (status=paid).</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Activar el Scheduler (desarrollo)</h3>
+        <p style="margin-bottom:10px;">El scheduler de Laravel necesita correr continuamente. En desarrollo hay dos opciones:</p>
+        <pre># Opción A: Ejecutar una vez manualmente
+php artisan schedule:run
+
+# Opción B: Simular el scheduler en loop (recomendado en dev)
+php artisan schedule:work</pre>
+      </div>
+
+      <div class="card">
+        <h3>Configurar el Scheduler (producción)</h3>
+        <p style="margin-bottom:10px;">Agregar una sola entrada al crontab del servidor. Laravel se encarga del resto:</p>
+        <pre># Editar crontab
+crontab -e
+
+# Agregar esta línea (reemplazar /ruta/proyecto por la ruta real)
+* * * * * cd /ruta/proyecto && php artisan schedule:run >> /dev/null 2>&1</pre>
+        <div class="info-box info" style="margin-top:10px;">
+          <span class="info-icon">ℹ️</span>
+          <span>El cron del sistema corre el schedule:run cada minuto, pero cada comando tiene su propia frecuencia definida en <code>routes/console.php</code>.</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Definición de la programación (<code>routes/console.php</code>)</h3>
+        <pre>Schedule::command('sync:products')->everyThirtyMinutes();
+Schedule::command('sync:orders')->everyTenMinutes();
+Schedule::command('sync:customers')->hourly();
+Schedule::command('calculate:statistics')->hourly();</pre>
+      </div>
+    </section>
+
+    <!-- SINCRONIZACIÓN MANUAL -->
+    <section class="section" id="manual">
+      <div class="section-header">
+        <div class="section-icon icon-purple">🖐️</div>
+        <h2>Sincronización Manual</h2>
+      </div>
+
+      <div class="card">
+        <h3>Desde la interfaz web — Producto individual</h3>
+        <p style="margin-bottom:10px;">En la vista de detalle de un producto (<code>/products/{id}</code>), el botón <strong>Sincronizar</strong> fuerza una actualización inmediata desde MeLi:</p>
+        <div class="flow">
+          <div class="flow-step highlight">Clic "Sincronizar"<br>en el detalle</div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-step">POST /products/{id}/sync</div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-step">GET /items/{meli_item_id}<br>desde MeLi API</div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-step highlight success">BD actualizada<br>last_sync = now()</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Via API REST — Producto individual</h3>
+        <pre>POST /api/products/42/sync
+Authorization: Bearer {token}
+
+// Respuesta
+{
+  "success": true,
+  "data": {
+    "id": 42,
+    "title": "Camiseta Polo Azul",
+    "price": "89900.00",
+    "stock": 47,
+    "status": "active",
+    "last_sync": "2026-06-16T14:22:11Z"
+  },
+  "message": "Producto sincronizado exitosamente"
+}</pre>
+      </div>
+
+      <div class="card">
+        <h3>Via Artisan — Sincronización completa de una cuenta</h3>
+        <pre># Sincronizar todos los productos de una cuenta específica
+php artisan sync:products --account=1
+
+# Sincronizar todas las cuentas activas (sin parámetro)
+php artisan sync:products
+
+# Sincronizar órdenes desde una fecha específica
+php artisan sync:orders --account=1 --from=2026-06-01T00:00:00
+
+# Calcular estadísticas ahora mismo
+php artisan calculate:statistics --account=1</pre>
+      </div>
+
+      <div class="card">
+        <h3>Sincronizar órdenes desde el panel</h3>
+        <p>En la lista de ventas (<code>/orders</code>), el botón <strong>Sincronizar con MeLi</strong> (visible solo para Admin) lanza el <code>SyncOrdersJob</code> para todas las cuentas activas del usuario.</p>
+      </div>
+    </section>
+
+    <!-- WEBHOOKS -->
+    <section class="section" id="webhook">
+      <div class="section-header">
+        <div class="section-icon icon-blue">🪝</div>
+        <h2>Webhooks en Tiempo Real</h2>
+      </div>
+
+      <div class="info-box success">
+        <span class="info-icon">⚡</span>
+        <span>MeLi envía notificaciones instantáneas cuando ocurre un evento (nueva orden, cambio de precio, etc.). El panel responde en menos de 1 segundo y procesa en background.</span>
+      </div>
+
+      <div class="card">
+        <h3>Endpoint del webhook</h3>
+        <pre>POST /api/webhooks/mercadolibre
+# Sin autenticación JWT — usa firma HMAC-SHA256
+# Header: x-signature: {signature}</pre>
+      </div>
+
+      <div class="card">
+        <h3>Flujo de procesamiento</h3>
+        <div class="flow">
+          <div class="flow-step highlight">MeLi envía<br>POST al webhook</div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-step">Validar firma<br>HMAC-SHA256<br>x-signature</div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-step success">Responder<br>HTTP 200<br>inmediato</div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-step">Dispatch Job<br>en background</div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-step highlight">BD actualizada<br>+ Evento disparado</div>
+        </div>
+        <div class="info-box warning" style="margin-top:10px;">
+          <span class="info-icon">⚠️</span>
+          <span>MeLi requiere respuesta HTTP 200 en menos de 500ms. Por eso se responde inmediatamente y se procesa en background con un Job asíncrono.</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Tipos de notificaciones que llegan</h3>
+        <table class="table">
+          <thead><tr><th>topic</th><th>Descripción</th><th>Job disparado</th></tr></thead>
+          <tbody>
+            <tr><td><code>orders_v2</code></td><td>Nueva orden o cambio de estado</td><td><code>SyncOrdersJob</code></td></tr>
+            <tr><td><code>items</code></td><td>Cambio en un ítem (precio, stock, status)</td><td><code>SyncProductsJob</code></td></tr>
+            <tr><td><code>questions</code></td><td>Nueva pregunta en un ítem</td><td>— (solo log)</td></tr>
+            <tr><td><code>payments</code></td><td>Cambio en el estado de un pago</td><td><code>SyncOrdersJob</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h3>Configurar el webhook en el portal de MeLi</h3>
+        <p style="margin-bottom:10px;">En el portal de developers de MeLi, dentro de tu aplicación, ir a <strong>Notificaciones</strong> y configurar:</p>
+        <pre>URL de notificaciones:
+  https://tudominio.com/api/webhooks/mercadolibre
+
+Topics a suscribir:
+  ✓ orders_v2
+  ✓ items
+  ✓ payments</pre>
+        <div class="info-box info" style="margin-top:10px;">
+          <span class="info-icon">ℹ️</span>
+          <span>En desarrollo local, usar <strong>ngrok</strong> o similar para exponer el puerto 8000 a internet: <code>ngrok http 8000</code>. Usar la URL HTTPS de ngrok como URL del webhook.</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Ejemplo de payload del webhook</h3>
+        <pre>{
+  "_id": "bf088d5e-75bc-4a09-a2e4-da2a9da56efd",
+  "resource": "/orders/2000003476598",
+  "user_id": 123456789,
+  "topic": "orders_v2",
+  "application_id": 987654321,
+  "attempts": 1,
+  "sent": "2026-06-16T14:30:00.000Z",
+  "received": "2026-06-16T14:30:00.100Z"
+}</pre>
+      </div>
+    </section>
+
+    <!-- QUEUE WORKER -->
+    <section class="section" id="queue">
+      <div class="section-header">
+        <div class="section-icon icon-yellow">⚙️</div>
+        <h2>Queue Worker</h2>
+      </div>
+
+      <div class="info-box danger">
+        <span class="info-icon">🚨</span>
+        <span>El Queue Worker es <strong>obligatorio</strong> para que funcione cualquier sincronización. Sin él, los Jobs se encolan pero nunca se ejecutan.</span>
+      </div>
+
+      <div class="card">
+        <h3>Iniciar el Queue Worker</h3>
+        <pre># Desarrollo (muestra logs en tiempo real, reinicia al cambiar código)
+php artisan queue:listen
+
+# Producción (más eficiente, no detecta cambios de código)
+php artisan queue:work --queue=default --tries=3 --timeout=300
+
+# Con supervisor (recomendado en producción)
+# Ver configuración de supervisor más abajo</pre>
+      </div>
+
+      <div class="card">
+        <h3>Configuración de Supervisor (producción)</h3>
+        <p style="margin-bottom:10px;">Crear el archivo <code>/etc/supervisor/conf.d/marketplace-worker.conf</code>:</p>
+        <pre>[program:marketplace-worker]
+process_name=%(program_name)s_%(process_num)02d
+command=php /ruta/proyecto/artisan queue:work database --sleep=3 --tries=3 --timeout=300
+autostart=true
+autorestart=true
+stopasgroup=true
+killasgroup=true
+user=www-data
+numprocs=2
+redirect_stderr=true
+stdout_logfile=/var/log/supervisor/marketplace-worker.log
+stopwaitsecs=3600</pre>
+        <pre># Activar
+sudo supervisorctl reread
+sudo supervisorctl update
+sudo supervisorctl start marketplace-worker:*</pre>
+      </div>
+
+      <div class="card">
+        <h3>Verificar que el Queue está funcionando</h3>
+        <pre>-- Ver Jobs pendientes en la cola
+SELECT id, queue, payload, attempts, created_at
+FROM jobs
+ORDER BY created_at DESC
+LIMIT 10;
+
+-- Ver Jobs fallidos
+SELECT id, queue, payload, exception, failed_at
+FROM failed_jobs
+ORDER BY failed_at DESC
+LIMIT 10;</pre>
+      </div>
+    </section>
+
+    <!-- RETRY Y RATE LIMITING -->
+    <section class="section" id="retry">
+      <div class="section-header">
+        <div class="section-icon icon-red">↩️</div>
+        <h2>Reintentos y Rate Limiting</h2>
+      </div>
+
+      <div class="card">
+        <h3>Política de reintentos de Jobs</h3>
+        <table class="table">
+          <thead><tr><th>Configuración</th><th>Valor</th><th>Descripción</th></tr></thead>
+          <tbody>
+            <tr><td><code>$tries</code></td><td>3</td><td>Número máximo de intentos por Job</td></tr>
+            <tr><td><code>$timeout</code></td><td>300 segundos</td><td>Tiempo máximo de ejecución por intento</td></tr>
+            <tr><td>Fallo final</td><td>failed_jobs</td><td>Va a la tabla failed_jobs + SyncFailed event</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h3>Exponential Backoff para Rate Limiting de MeLi (429)</h3>
+        <p style="margin-bottom:16px;">Cuando MeLi responde con HTTP 429 (Too Many Requests), el sistema aplica espera exponencial antes de reintentar:</p>
+        <div class="retry-timeline">
+          <div class="retry-node">
+            <div class="retry-dot"></div>
+            <div class="retry-label">Request #1</div>
+          </div>
+          <div class="retry-line"><span class="retry-wait">429 → esperar 1s</span></div>
+          <div class="retry-node">
+            <div class="retry-dot"></div>
+            <div class="retry-label">Intento #2</div>
+          </div>
+          <div class="retry-line"><span class="retry-wait">429 → esperar 3s</span></div>
+          <div class="retry-node">
+            <div class="retry-dot"></div>
+            <div class="retry-label">Intento #3</div>
+          </div>
+          <div class="retry-line"><span class="retry-wait">429 → esperar 10s</span></div>
+          <div class="retry-node">
+            <div class="retry-dot fail"></div>
+            <div class="retry-label">Fallo final</div>
+          </div>
+        </div>
+        <pre>// Implementación en MercadoLibreService.php
+private function requestWithRetry(string $method, string $url, array $options = []): array
+{
+    $delays = [1, 3, 10]; // segundos de espera entre intentos
+    foreach ($delays as $i => $delay) {
+        $response = Http::withToken($account->access_token)->$method($url, $options);
+        if ($response->status() !== 429) {
+            return $response->json();
+        }
+        if ($i < count($delays) - 1) {
+            sleep($delay);
+        }
+    }
+    throw new MeliRateLimitException('Rate limit excedido después de 3 intentos');
+}</pre>
+      </div>
+
+      <div class="card">
+        <h3>Re-ejecutar Jobs fallidos</h3>
+        <pre># Ver jobs fallidos
+php artisan queue:failed
+
+# Re-intentar todos los fallidos
+php artisan queue:retry all
+
+# Re-intentar uno específico por ID
+php artisan queue:retry 5
+
+# Eliminar todos los fallidos
+php artisan queue:flush</pre>
+      </div>
+    </section>
+
+    <!-- LOGS -->
+    <section class="section" id="logs">
+      <div class="section-header">
+        <div class="section-icon icon-teal">📋</div>
+        <h2>Logs de Sincronización</h2>
+      </div>
+
+      <div class="card">
+        <h3>Tabla <code>sync_logs</code></h3>
+        <p style="margin-bottom:10px;">Cada ejecución de sync queda registrada:</p>
+        <table class="table">
+          <thead><tr><th>Campo</th><th>Tipo</th><th>Descripción</th></tr></thead>
+          <tbody>
+            <tr><td><code>id</code></td><td>bigint</td><td>Identificador</td></tr>
+            <tr><td><code>mercadolibre_account_id</code></td><td>FK nullable</td><td>Cuenta sincronizada (null = todas)</td></tr>
+            <tr><td><code>type</code></td><td>enum</td><td>products / orders / customers / statistics / webhook</td></tr>
+            <tr><td><code>status</code></td><td>enum</td><td>pending / running / success / error</td></tr>
+            <tr><td><code>records_processed</code></td><td>integer</td><td>Cantidad de registros procesados</td></tr>
+            <tr><td><code>error_message</code></td><td>text nullable</td><td>Detalle del error si status=error</td></tr>
+            <tr><td><code>started_at</code></td><td>timestamp</td><td>Inicio de ejecución</td></tr>
+            <tr><td><code>finished_at</code></td><td>timestamp</td><td>Fin de ejecución</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h3>Consultas útiles sobre sync_logs</h3>
+        <pre>-- Últimos 20 sync de productos
+SELECT type, status, records_processed,
+       TIMEDIFF(finished_at, started_at) AS duracion,
+       started_at
+FROM sync_logs
+WHERE type = 'products'
+ORDER BY started_at DESC
+LIMIT 20;
+
+-- Errores de hoy
+SELECT sl.*, ma.nickname
+FROM sync_logs sl
+LEFT JOIN mercadolibre_accounts ma ON sl.mercadolibre_account_id = ma.id
+WHERE sl.status = 'error'
+  AND DATE(sl.started_at) = CURDATE()
+ORDER BY sl.started_at DESC;
+
+-- Estadísticas de sync de la semana
+SELECT type,
+       COUNT(*) AS total_ejecuciones,
+       SUM(CASE WHEN status='success' THEN 1 ELSE 0 END) AS exitosos,
+       SUM(CASE WHEN status='error' THEN 1 ELSE 0 END) AS fallidos,
+       AVG(records_processed) AS promedio_registros
+FROM sync_logs
+WHERE started_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+GROUP BY type;</pre>
+      </div>
+
+      <div class="card">
+        <h3>Ver logs de Laravel en tiempo real</h3>
+        <pre># En Windows (PowerShell)
+Get-Content storage/logs/laravel.log -Wait -Tail 50
+
+# En Linux/Mac
+tail -f storage/logs/laravel.log</pre>
+      </div>
+    </section>
+
+    <!-- MULTI-CUENTA -->
+    <section class="section" id="multi-cuenta">
+      <div class="section-header">
+        <div class="section-icon icon-purple">🏪</div>
+        <h2>Sincronización Multi-Cuenta</h2>
+      </div>
+
+      <div class="card">
+        <h3>¿Cómo funciona con N tiendas?</h3>
+        <p style="margin-bottom:10px;">Cuando se ejecuta un comando de sync sin especificar <code>--account</code>, el sistema itera sobre <strong>todas las cuentas activas</strong> de todos los usuarios y lanza un Job independiente por cada una:</p>
+        <pre>// Lógica del Artisan Command
+$accounts = MercadolibreAccount::where('is_active', true)->get();
+
+foreach ($accounts as $account) {
+    SyncProductsJob::dispatch($account);
+}</pre>
+      </div>
+
+      <div class="card">
+        <h3>Sincronizar solo una cuenta específica</h3>
+        <pre># Usando el ID de la cuenta en mercadolibre_accounts
+php artisan sync:products --account=2
+php artisan sync:orders --account=2
+php artisan sync:customers --account=2</pre>
+      </div>
+
+      <div class="card">
+        <h3>Aislamiento garantizado</h3>
+        <p>Cada Job tiene el <code>$account</code> inyectado. Los queries siempre filtran por <code>mercadolibre_account_id</code>, garantizando que los datos de una tienda nunca se mezclen con otra.</p>
+        <div class="info-box info" style="margin-top:10px;">
+          <span class="info-icon">ℹ️</span>
+          <span>Los Jobs de distintas cuentas corren en paralelo si se configura más de un worker (<code>numprocs=2</code> en supervisor), acelerando la sincronización cuando hay varias tiendas.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- TROUBLESHOOTING -->
+    <section class="section" id="troubleshooting">
+      <div class="section-header">
+        <div class="section-icon icon-yellow">🔧</div>
+        <h2>Solución de Problemas</h2>
+      </div>
+
+      <div class="card">
+        <h3>Los productos no se sincronizan</h3>
+        <ol style="padding-left:18px; color:var(--text-muted); font-size:13px; line-height:2.2;">
+          <li>Verificar que el Queue Worker esté corriendo: <code>php artisan queue:listen</code></li>
+          <li>Verificar que el Scheduler esté activo: <code>php artisan schedule:run</code></li>
+          <li>Revisar que la cuenta MeLi esté activa: <code>SELECT is_active FROM mercadolibre_accounts;</code></li>
+          <li>Revisar jobs fallidos: <code>php artisan queue:failed</code></li>
+          <li>Revisar el log: <code>storage/logs/laravel.log</code></li>
+        </ol>
+      </div>
+
+      <div class="card">
+        <h3>Error "Token expirado" durante sync</h3>
+        <p style="margin-bottom:8px;">El sistema debería renovar el token automáticamente cuando <code>expires_at &lt; ahora + 5 minutos</code>. Si falla:</p>
+        <pre>-- Verificar estado de tokens
+SELECT meli_user_id, nickname, expires_at, is_active
+FROM mercadolibre_accounts
+WHERE user_id = 1;
+
+-- Forzar estado inactivo para reconectar
+UPDATE mercadolibre_accounts SET is_active = 0 WHERE id = 1;</pre>
+        <p style="margin-top:8px; font-size:12px; color:var(--text-muted);">Luego reconectar la cuenta desde la UI: <strong>Mis Tiendas → Conectar con MeLi</strong>.</p>
+      </div>
+
+      <div class="card">
+        <h3>Webhook no llega / responde con error</h3>
+        <ul style="padding-left:18px; color:var(--text-muted); font-size:13px; line-height:2.2;">
+          <li>En desarrollo, usar ngrok y actualizar la URL en el portal de MeLi developers</li>
+          <li>Verificar que la ruta no tenga middleware JWT (el webhook usa firma HMAC)</li>
+          <li>Revisar en el portal de MeLi el historial de notificaciones enviadas y su estado</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>La cola crece sin procesarse</h3>
+        <pre># Ver tamaño de la cola
+SELECT COUNT(*) as pendientes FROM jobs WHERE queue = 'default';
+
+# Ver si hay Jobs bloqueados (attempts > 0)
+SELECT id, attempts, available_at FROM jobs
+WHERE attempts > 0 ORDER BY attempts DESC;
+
+# Limpiar la cola (¡CUIDADO! Elimina todos los jobs pendientes)
+php artisan queue:clear --queue=default</pre>
+      </div>
+
+      <div class="card">
+        <h3>Comandos de diagnóstico rápido</h3>
+        <pre>php artisan queue:failed             # Ver jobs fallidos
+php artisan queue:retry all          # Re-intentar todos los fallidos
+php artisan schedule:list            # Ver cronograma de tareas
+php artisan route:list --path=webhook # Verificar ruta del webhook
+php artisan config:clear             # Limpiar caché de configuración</pre>
+      </div>
+    </section>
+
+    <footer style="border-top:1px solid var(--border);padding-top:24px;color:var(--text-muted);font-size:11px;text-align:center;margin-top:40px;">
+      Marketplace Manager MeLi Colombia · <a href="index.html">Volver a Documentación Principal</a>
+    </footer>
+
+  </main>
+</div>
+</body>
+</html>

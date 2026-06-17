@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Marketplace Manager — Documentación del Proyecto</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3250;
+      --accent: #4f6ef7;
+      --accent2: #7c3aed;
+      --green: #22c55e;
+      --yellow: #eab308;
+      --red: #ef4444;
+      --orange: #f97316;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --code-bg: #12141e;
+      --radius: 10px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; font-size: 14px; line-height: 1.6; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .layout { display: flex; min-height: 100vh; }
+    .sidebar { width: 260px; background: var(--surface); border-right: 1px solid var(--border); position: fixed; top: 0; left: 0; height: 100vh; overflow-y: auto; padding: 24px 0; }
+    .main { margin-left: 260px; padding: 40px; max-width: 1100px; }
+
+    .sidebar-logo { padding: 0 20px 24px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+    .sidebar-logo h1 { font-size: 15px; font-weight: 700; color: var(--text); }
+    .sidebar-logo span { font-size: 11px; color: var(--text-muted); }
+    .nav-section { padding: 8px 20px 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--text-muted); }
+    .nav-item { display: flex; align-items: center; gap: 8px; padding: 7px 20px; color: var(--text-muted); cursor: pointer; font-size: 13px; border-left: 3px solid transparent; }
+    .nav-item:hover { background: var(--surface2); color: var(--text); }
+    .nav-item.active { color: var(--accent); border-left-color: var(--accent); background: var(--surface2); }
+    .nav-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .dot-done { background: var(--green); }
+    .dot-progress { background: var(--yellow); }
+    .dot-pending { background: var(--border); }
+
+    .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+    .badge-done { background: #14532d; color: var(--green); }
+    .badge-progress { background: #422006; color: var(--orange); }
+    .badge-pending { background: var(--surface2); color: var(--text-muted); }
+    .badge-get { background: #1e3a5f; color: #60a5fa; }
+    .badge-post { background: #14532d; color: var(--green); }
+    .badge-put { background: #422006; color: var(--orange); }
+    .badge-delete { background: #450a0a; color: var(--red); }
+
+    .section { margin-bottom: 56px; }
+    .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+    .section-header h2 { font-size: 22px; font-weight: 700; }
+    .section-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+    .icon-blue { background: #1e3a5f; }
+    .icon-purple { background: #2e1065; }
+    .icon-green { background: #14532d; }
+    .icon-yellow { background: #422006; }
+    .icon-red { background: #450a0a; }
+
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
+    .card h3 { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+    .card p { color: var(--text-muted); font-size: 13px; }
+    .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+
+    .phase-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    .phase-header { padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
+    .phase-header h3 { font-size: 13px; font-weight: 700; }
+    .phase-body { padding: 14px 18px; }
+    .phase-body p { font-size: 12px; color: var(--text-muted); margin-bottom: 10px; }
+
+    .file-list { list-style: none; }
+    .file-list li { display: flex; align-items: flex-start; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+    .file-list li:last-child { border-bottom: none; }
+    .file-name { font-family: 'Cascadia Code', 'Courier New', monospace; color: #93c5fd; font-size: 11px; white-space: nowrap; min-width: 260px; }
+    .file-desc { color: var(--text-muted); }
+
+    pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 16px; overflow-x: auto; font-family: 'Cascadia Code', 'Courier New', monospace; font-size: 12px; line-height: 1.7; margin: 12px 0; }
+    code { font-family: 'Cascadia Code', 'Courier New', monospace; background: var(--code-bg); padding: 2px 6px; border-radius: 4px; font-size: 12px; color: #93c5fd; }
+
+    .db-table { width: 100%; border-collapse: collapse; font-size: 12px; margin: 12px 0; }
+    .db-table th { background: var(--surface2); color: var(--text-muted); padding: 8px 12px; text-align: left; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; }
+    .db-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); }
+    .db-table tr:last-child td { border-bottom: none; }
+    .col-pk { color: #fbbf24; }
+    .col-fk { color: #a78bfa; }
+    .col-type { color: #6ee7b7; font-family: monospace; }
+    .col-null { color: var(--text-muted); font-size: 11px; }
+
+    .route-list { list-style: none; }
+    .route-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: 12px; }
+    .route-item:last-child { border-bottom: none; }
+    .route-path { font-family: monospace; color: var(--text); }
+    .route-desc { color: var(--text-muted); margin-left: auto; font-size: 11px; }
+    .route-auth { font-size: 10px; padding: 1px 6px; border-radius: 10px; background: #1e3a5f; color: #60a5fa; }
+
+    .flow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 16px; background: var(--code-bg); border-radius: 8px; margin: 12px 0; }
+    .flow-step { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 6px 12px; font-size: 12px; text-align: center; }
+    .flow-arrow { color: var(--accent); font-size: 16px; }
+
+    .stack-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+    .stack-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
+    .stack-item .tech { font-weight: 700; font-size: 13px; }
+    .stack-item .ver { font-size: 11px; color: var(--accent); margin-top: 2px; }
+    .stack-item .role { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+    .progress-bar { background: var(--surface2); border-radius: 20px; height: 6px; margin-top: 8px; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 20px; background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+
+    .arch { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr; gap: 8px; text-align: center; font-size: 11px; margin: 16px 0; }
+    .arch-box { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 12px 8px; }
+    .arch-box .layer { font-weight: 700; font-size: 12px; color: var(--accent); margin-bottom: 6px; }
+    .arch-box .items { color: var(--text-muted); line-height: 1.8; }
+
+    .info-box { border-radius: 8px; padding: 12px 16px; margin: 12px 0; font-size: 13px; display: flex; gap: 10px; align-items: flex-start; }
+    .info-box.info { background: #1e3a5f22; border: 1px solid #1e3a5f; }
+    .info-box.warning { background: #42200622; border: 1px solid #78350f; }
+    .info-box.success { background: #14532d22; border: 1px solid #166534; }
+    .info-icon { font-size: 16px; flex-shrink: 0; }
+
+    .cred-box { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin: 12px 0; }
+    .cred-row { display: flex; gap: 12px; margin-bottom: 6px; font-size: 12px; }
+    .cred-label { color: var(--text-muted); width: 120px; flex-shrink: 0; }
+    .cred-value { font-family: monospace; color: var(--green); }
+
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; padding: 20px; }
+      .arch { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <h1>Marketplace Manager</h1>
+      <span>Mercado Libre Colombia · MCO</span>
+    </div>
+
+    <div class="nav-section">Progreso</div>
+    <a href="#overview" class="nav-item active"><span class="nav-dot dot-done"></span>Resumen del Proyecto</a>
+    <a href="#stack" class="nav-item"><span class="nav-dot dot-done"></span>Stack Tecnológico</a>
+    <a href="#architecture" class="nav-item"><span class="nav-dot dot-done"></span>Arquitectura</a>
+    <a href="#database" class="nav-item"><span class="nav-dot dot-done"></span>Base de Datos</a>
+
+    <div class="nav-section">Fases</div>
+    <a href="#fase1" class="nav-item"><span class="nav-dot dot-done"></span>Fase 1 — Fundación</a>
+    <a href="#fase2" class="nav-item"><span class="nav-dot dot-done"></span>Fase 2 — Dependencias</a>
+    <a href="#fase3" class="nav-item"><span class="nav-dot dot-done"></span>Fase 3 — Base de Datos</a>
+    <a href="#fase4" class="nav-item"><span class="nav-dot dot-done"></span>Fase 4 — Autenticación JWT</a>
+    <a href="#fase5" class="nav-item"><span class="nav-dot dot-done"></span>Fase 5 — MercadoLibre</a>
+    <a href="#fase6" class="nav-item"><span class="nav-dot dot-done"></span>Fase 6 — Productos</a>
+    <a href="#fase7" class="nav-item"><span class="nav-dot dot-done"></span>Fase 7 — Ventas</a>
+    <a href="#fase8" class="nav-item"><span class="nav-dot dot-done"></span>Fase 8 — Clientes</a>
+    <a href="#fase9" class="nav-item"><span class="nav-dot dot-done"></span>Fase 9 — Dashboard</a>
+    <a href="#fase10" class="nav-item"><span class="nav-dot dot-done"></span>Fase 10 — Reportes</a>
+    <a href="#fase11" class="nav-item"><span class="nav-dot dot-done"></span>Fase 11 — Jobs/Scheduler</a>
+    <a href="#fase12" class="nav-item"><span class="nav-dot dot-done"></span>Fase 12 — Tests</a>
+
+    <div class="nav-section">Referencia</div>
+    <a href="#api" class="nav-item"><span class="nav-dot dot-done"></span>API REST</a>
+    <a href="#credentials" class="nav-item"><span class="nav-dot dot-done"></span>Credenciales Dev</a>
+
+    <div class="nav-section">Guías Prácticas</div>
+    <a href="guia-conectar-tienda.html" class="nav-item"><span class="nav-dot dot-done"></span>Conectar una Tienda</a>
+    <a href="guia-gestionar-producto.html" class="nav-item"><span class="nav-dot dot-done"></span>Gestionar Productos</a>
+    <a href="guia-sincronizar-tienda.html" class="nav-item"><span class="nav-dot dot-done"></span>Sincronizar Tienda</a>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <main class="main">
+
+    <!-- OVERVIEW -->
+    <section class="section" id="overview">
+      <div class="section-header">
+        <div class="section-icon icon-blue">🛒</div>
+        <h2>Resumen del Proyecto</h2>
+        <span class="badge badge-done">✓ Completado · 12/12 fases</span>
+      </div>
+
+      <div class="card">
+        <h3>¿Qué es este sistema?</h3>
+        <p>Panel administrativo web para gestionar publicaciones, ventas, clientes y métricas de Mercado Libre Colombia (MCO) desde una sola interfaz. Permite sincronizar datos automáticamente, exportar reportes y gestionar múltiples cuentas de MeLi por usuario.</p>
+      </div>
+
+      <div class="progress-bar" style="margin-bottom:6px;">
+        <div class="progress-fill" style="width:100%"></div>
+      </div>
+      <p style="font-size:11px;color:var(--text-muted);margin-bottom:24px;">Progreso general: 100% — Proyecto completo (12/12 fases)</p>
+
+      <div class="card-grid">
+        <div class="card">
+          <h3>🎯 Objetivo</h3>
+          <p>Reemplazar la gestión manual en MeLi con un panel centralizado que sincroniza datos automáticamente cada 10–60 minutos vía Jobs y Queues.</p>
+        </div>
+        <div class="card">
+          <h3>🌎 País</h3>
+          <p>Mercado Libre Colombia <code>MCO</code>. Moneda COP. Auth URL: <code>auth.mercadolibre.com.co</code>. API: <code>api.mercadolibre.com</code></p>
+        </div>
+        <div class="card">
+          <h3>👥 Roles</h3>
+          <p><strong>Admin:</strong> Acceso total (CRUD, exportar, sincronizar).<br><strong>Operador:</strong> Solo lectura de productos, ventas y clientes.</p>
+        </div>
+        <div class="card">
+          <h3>🔑 Credenciales Dev</h3>
+          <p>Admin: <code>admin@marketplace.com</code> / <code>password</code><br>Operador: <code>operador@marketplace.com</code> / <code>password</code></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- STACK -->
+    <section class="section" id="stack">
+      <div class="section-header">
+        <div class="section-icon icon-purple">⚙️</div>
+        <h2>Stack Tecnológico</h2>
+      </div>
+      <div class="stack-grid">
+        <div class="stack-item"><div class="tech">Laravel</div><div class="ver">12.x</div><div class="role">Framework backend</div></div>
+        <div class="stack-item"><div class="tech">PHP</div><div class="ver">8.2+</div><div class="role">Lenguaje principal</div></div>
+        <div class="stack-item"><div class="tech">MySQL</div><div class="ver">8.x</div><div class="role">Base de datos principal</div></div>
+        <div class="stack-item"><div class="tech">tymon/jwt-auth</div><div class="ver">2.3.0</div><div class="role">Autenticación JWT API</div></div>
+        <div class="stack-item"><div class="tech">darkaonline/l5-swagger</div><div class="ver">11.1.0</div><div class="role">Documentación Swagger</div></div>
+        <div class="stack-item"><div class="tech">maatwebsite/excel</div><div class="ver">3.1.69</div><div class="role">Exportación Excel/CSV</div></div>
+        <div class="stack-item"><div class="tech">league/flysystem-aws-s3-v3</div><div class="ver">3.34.0</div><div class="role">Storage imágenes en S3</div></div>
+        <div class="stack-item"><div class="tech">Bootstrap</div><div class="ver">5.3 CDN</div><div class="role">Frontend (Blade puro)</div></div>
+        <div class="stack-item"><div class="tech">Chart.js</div><div class="ver">CDN</div><div class="role">Gráficos del dashboard</div></div>
+        <div class="stack-item"><div class="tech">Bootstrap Icons</div><div class="ver">CDN</div><div class="role">Iconografía</div></div>
+        <div class="stack-item"><div class="tech">Queue: database</div><div class="ver">—</div><div class="role">Procesamiento async</div></div>
+        <div class="stack-item"><div class="tech">Storage: AWS S3</div><div class="ver">—</div><div class="role">Imágenes de productos</div></div>
+      </div>
+      <div class="info-box warning" style="margin-top:16px;">
+        <span class="info-icon">⚠️</span>
+        <span><strong>NO usar:</strong> Livewire, Vue, React, DataTables. Solo Blade + Bootstrap puro con Axios para llamadas AJAX.</span>
+      </div>
+    </section>
+
+    <!-- ARCHITECTURE -->
+    <section class="section" id="architecture">
+      <div class="section-header">
+        <div class="section-icon icon-green">🏗️</div>
+        <h2>Arquitectura</h2>
+      </div>
+
+      <div class="arch">
+        <div class="arch-box">
+          <div class="layer">Controller</div>
+          <div class="items">Recibe request<br>Llama Service<br>Devuelve response<br>— Sin lógica —</div>
+        </div>
+        <div class="arch-box">
+          <div class="layer">Service</div>
+          <div class="items">Toda la lógica<br>de negocio<br>Llama Repository<br>via Interface</div>
+        </div>
+        <div class="arch-box">
+          <div class="layer">Repository</div>
+          <div class="items">Solo queries<br>Eloquent<br>Implementa<br>Interface</div>
+        </div>
+        <div class="arch-box">
+          <div class="layer">Model</div>
+          <div class="items">Relaciones<br>Casts<br>Fillable<br>— Sin lógica —</div>
+        </div>
+        <div class="arch-box">
+          <div class="layer">DTO</div>
+          <div class="items">Transferencia<br>de datos entre<br>capas<br>Inmutables</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Reglas de oro (nunca romper)</h3>
+        <ul style="font-size:12px;color:var(--text-muted);padding-left:18px;line-height:2;">
+          <li>Nunca <code>Model::where()</code> directo en un Controller o Service → siempre via Repository</li>
+          <li>Nunca validar en un Service → usar Form Requests en el Controller</li>
+          <li>Nunca <code>if ($user->role === 'admin')</code> → usar Policies</li>
+          <li>Nunca devolver arrays crudos entre capas → usar DTOs</li>
+          <li>Nunca llamadas a la API de MeLi fuera de <code>MercadoLibreService</code></li>
+          <li>Toda respuesta API usa la estructura <code>{ success, data, message, errors }</code></li>
+        </ul>
+      </div>
+
+      <pre>app/
+  Http/
+    Controllers/Api/     ← Controllers de la API REST
+    Controllers/Web/     ← Controllers para vistas Blade
+    Middleware/          ← JwtMiddleware, RoleMiddleware
+    Requests/Auth/       ← LoginRequest, RegisterRequest, etc.
+    Requests/Product/    ← StoreProductRequest, UpdateProductRequest
+  Services/              ← MercadoLibreService, ProductService, etc.
+  Repositories/          ← Implementaciones (ProductRepository, etc.)
+  Interfaces/            ← Una Interface por cada Repository
+  Models/                ← User, Product, Order, Customer, etc.
+  Jobs/                  ← SyncProductsJob, SyncOrdersJob, etc.
+  Events/                ← ProductSynced, OrderSynced, etc.
+  Listeners/             ← UpdateProductStatistics, etc.
+  DTOs/                  ← ProductDTO, OrderDTO, etc.
+  Policies/              ← ProductPolicy, OrderPolicy, etc.</pre>
+    </section>
+
+    <!-- DATABASE -->
+    <section class="section" id="database">
+      <div class="section-header">
+        <div class="section-icon icon-yellow">🗄️</div>
+        <h2>Base de Datos</h2>
+        <span class="badge badge-done">✓ Migrada</span>
+      </div>
+
+      <div class="info-box success">
+        <span class="info-icon">✅</span>
+        <span>Base de datos <code>marketplace_manager</code> en MySQL 8 con 14 tablas migradas y seeded exitosamente.</span>
+      </div>
+
+      <h3 style="margin:20px 0 10px;font-size:14px;">Diagrama de relaciones</h3>
+      <pre>users ──────────── user_roles ──── roles
+  │
+  └── mercadolibre_accounts
+          │
+          ├── products ──── categories
+          │       └── product_statistics
+          │       └── order_items
+          │
+          ├── customers
+          │
+          ├── orders ─── order_items
+          │
+          ├── sales_statistics
+          └── sync_logs</pre>
+
+      <h3 style="margin:20px 0 10px;font-size:14px;">Tablas principales</h3>
+
+      <div class="card" style="overflow-x:auto;">
+        <h3>products</h3>
+        <table class="db-table">
+          <thead><tr><th>Campo</th><th>Tipo</th><th>Notas</th></tr></thead>
+          <tbody>
+            <tr><td class="col-pk">id</td><td class="col-type">bigint PK</td><td class="col-null">auto</td></tr>
+            <tr><td>meli_item_id</td><td class="col-type">varchar unique</td><td class="col-null">nullable · ID en MeLi</td></tr>
+            <tr><td class="col-fk">mercadolibre_account_id</td><td class="col-type">FK</td><td class="col-null">cascade delete</td></tr>
+            <tr><td class="col-fk">category_id</td><td class="col-type">FK nullable</td><td class="col-null">null on delete</td></tr>
+            <tr><td>title</td><td class="col-type">varchar</td><td class="col-null">—</td></tr>
+            <tr><td>price</td><td class="col-type">decimal(12,2)</td><td class="col-null">COP</td></tr>
+            <tr><td>stock</td><td class="col-type">integer</td><td class="col-null">default 0</td></tr>
+            <tr><td>status</td><td class="col-type">enum</td><td class="col-null">active / paused / closed</td></tr>
+            <tr><td>thumbnail</td><td class="col-type">varchar</td><td class="col-null">URL pública S3</td></tr>
+            <tr><td>last_sync</td><td class="col-type">timestamp</td><td class="col-null">nullable</td></tr>
+            <tr><td>deleted_at</td><td class="col-type">timestamp</td><td class="col-null">soft delete</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card" style="overflow-x:auto;">
+        <h3>orders</h3>
+        <table class="db-table">
+          <thead><tr><th>Campo</th><th>Tipo</th><th>Notas</th></tr></thead>
+          <tbody>
+            <tr><td class="col-pk">id</td><td class="col-type">bigint PK</td><td class="col-null">auto</td></tr>
+            <tr><td>meli_order_id</td><td class="col-type">varchar unique</td><td class="col-null">ID de la orden en MeLi</td></tr>
+            <tr><td class="col-fk">mercadolibre_account_id</td><td class="col-type">FK</td><td class="col-null">cascade delete</td></tr>
+            <tr><td class="col-fk">customer_id</td><td class="col-type">FK</td><td class="col-null">cascade delete</td></tr>
+            <tr><td>status</td><td class="col-type">varchar</td><td class="col-null">paid / pending / cancelled</td></tr>
+            <tr><td>payment_status</td><td class="col-type">varchar</td><td class="col-null">approved / pending / rejected</td></tr>
+            <tr><td>total_amount</td><td class="col-type">decimal(12,2)</td><td class="col-null">COP</td></tr>
+            <tr><td>order_date</td><td class="col-type">timestamp</td><td class="col-null">—</td></tr>
+            <tr><td>deleted_at</td><td class="col-type">timestamp</td><td class="col-null">soft delete</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card" style="overflow-x:auto;">
+        <h3>mercadolibre_accounts</h3>
+        <table class="db-table">
+          <thead><tr><th>Campo</th><th>Tipo</th><th>Notas</th></tr></thead>
+          <tbody>
+            <tr><td class="col-pk">id</td><td class="col-type">bigint PK</td><td class="col-null">auto</td></tr>
+            <tr><td class="col-fk">user_id</td><td class="col-type">FK</td><td class="col-null">cascade delete</td></tr>
+            <tr><td>meli_user_id</td><td class="col-type">varchar unique</td><td class="col-null">ID del vendedor en MeLi</td></tr>
+            <tr><td>access_token</td><td class="col-type">text</td><td class="col-null">hidden en serialización</td></tr>
+            <tr><td>refresh_token</td><td class="col-type">text</td><td class="col-null">hidden en serialización</td></tr>
+            <tr><td>expires_at</td><td class="col-type">timestamp</td><td class="col-null">auto-refresh si &lt; 5 min</td></tr>
+            <tr><td>is_active</td><td class="col-type">boolean</td><td class="col-null">default true</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- FASE 1 -->
+    <section class="section" id="fase1">
+      <div class="section-header">
+        <div class="section-icon icon-green">1️⃣</div>
+        <h2>Fase 1 — Fundación</h2>
+        <span class="badge badge-done">✓ Completada</span>
+      </div>
+      <div class="card">
+        <h3>¿Qué se hizo?</h3>
+        <p>Configuración inicial del proyecto, estructura de carpetas y documentación base.</p>
+      </div>
+      <ul class="file-list">
+        <li><span class="file-name">CLAUDE.md</span><span class="file-desc">Reglas del proyecto que Claude lee automáticamente en cada sesión: arquitectura, convenciones, comandos clave.</span></li>
+        <li><span class="file-name">.env / .env.example</span><span class="file-desc">Variables completas: DB, JWT, MeLi OAuth, AWS S3, Mail, Queue.</span></li>
+        <li><span class="file-name">app/Services/ · app/Repositories/ · app/Interfaces/</span><span class="file-desc">Carpetas para la arquitectura en capas.</span></li>
+        <li><span class="file-name">app/DTOs/ · app/Policies/ · app/Jobs/ · app/Events/ · app/Listeners/</span><span class="file-desc">Carpetas para objetos de soporte.</span></li>
+        <li><span class="file-name">.claude/docs/index.html</span><span class="file-desc">Este archivo de documentación HTML actualizado incrementalmente.</span></li>
+      </ul>
+    </section>
+
+    <!-- FASE 2 -->
+    <section class="section" id="fase2">
+      <div class="section-header">
+        <div class="section-icon icon-green">2️⃣</div>
+        <h2>Fase 2 — Dependencias y Configuración</h2>
+        <span class="badge badge-done">✓ Completada</span>
+      </div>
+      <div class="card"><h3>Paquetes instalados</h3>
+        <ul class="file-list">
+          <li><span class="file-name">tymon/jwt-auth 2.3.0</span><span class="file-desc">Autenticación JWT. Config en <code>config/jwt.php</code>. Secret generado en <code>.env</code>.</span></li>
+          <li><span class="file-name">darkaonline/l5-swagger 11.1.0</span><span class="file-desc">Documentación Swagger. UI disponible en <code>/api/documentation</code>.</span></li>
+          <li><span class="file-name">maatwebsite/excel 3.1.69</span><span class="file-desc">Exportación Excel/CSV.</span></li>
+          <li><span class="file-name">league/flysystem-aws-s3-v3 3.34.0</span><span class="file-desc">Driver S3 para imágenes. Disk <code>s3</code> con visibility public.</span></li>
+        </ul>
+      </div>
+      <div class="card"><h3>Configuraciones modificadas</h3>
+        <ul class="file-list">
+          <li><span class="file-name">config/services.php</span><span class="file-desc">Bloque <code>mercadolibre</code>: client_id, secret, auth_url (<code>mercadolibre.com.co</code>), token_url, country_code MCO.</span></li>
+          <li><span class="file-name">config/filesystems.php</span><span class="file-desc">Disco S3 con <code>visibility: public</code>.</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- FASE 3 -->
+    <section class="section" id="fase3">
+      <div class="section-header">
+        <div class="section-icon icon-green">3️⃣</div>
+        <h2>Fase 3 — Base de Datos</h2>
+        <span class="badge badge-done">✓ Completada</span>
+      </div>
+      <div class="card"><h3>11 Migraciones (en orden de FK)</h3>
+        <ul class="file-list">
+          <li><span class="file-name">000001 · roles</span><span class="file-desc">id, name (unique), description</span></li>
+          <li><span class="file-name">000002 · user_roles</span><span class="file-desc">user_id FK, role_id FK · unique(user_id, role_id)</span></li>
+          <li><span class="file-name">000003 · mercadolibre_accounts</span><span class="file-desc">user_id FK, meli_user_id unique, tokens, expires_at, is_active</span></li>
+          <li><span class="file-name">000004 · categories</span><span class="file-desc">meli_category_id unique, name</span></li>
+          <li><span class="file-name">000005 · products</span><span class="file-desc">meli_item_id, account FK, category FK, price decimal(12,2), status enum, softDeletes</span></li>
+          <li><span class="file-name">000006 · customers</span><span class="file-desc">meli_customer_id unique, account FK, softDeletes</span></li>
+          <li><span class="file-name">000007 · orders</span><span class="file-desc">meli_order_id unique, account FK, customer FK, total_amount decimal(12,2), softDeletes</span></li>
+          <li><span class="file-name">000008 · order_items</span><span class="file-desc">order FK, product FK nullable, unit_price, total_price</span></li>
+          <li><span class="file-name">000009 · product_statistics</span><span class="file-desc">product_id unique FK, quantity_sold, total_revenue</span></li>
+          <li><span class="file-name">000010 · sales_statistics</span><span class="file-desc">account FK, stat_date · unique(account, date)</span></li>
+          <li><span class="file-name">000011 · sync_logs</span><span class="file-desc">account FK nullable, type enum, status enum, started_at, finished_at</span></li>
+        </ul>
+      </div>
+      <div class="card"><h3>Seeders ejecutados exitosamente</h3>
+        <ul class="file-list">
+          <li><span class="file-name">RoleSeeder</span><span class="file-desc">Roles: <code>admin</code> y <code>operator</code></span></li>
+          <li><span class="file-name">UserSeeder</span><span class="file-desc">Admin: admin@marketplace.com / password · Operador: operador@marketplace.com / password</span></li>
+          <li><span class="file-name">CategorySeeder</span><span class="file-desc">20 categorías principales de MeLi Colombia (MCO)</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- FASE 4 -->
+    <section class="section" id="fase4">
+      <div class="section-header">
+        <div class="section-icon icon-green">4️⃣</div>
+        <h2>Fase 4 — Autenticación JWT</h2>
+        <span class="badge badge-done">✓ Completada y probada</span>
+      </div>
+
+      <div class="info-box success">
+        <span class="info-icon">✅</span>
+        <span>Endpoint <code>POST /api/auth/login</code> probado y funcionando. Devuelve JWT token con usuario y roles.</span>
+      </div>
+
+      <div class="flow" style="margin:16px 0;">
+        <div class="flow-step">POST /api/auth/login</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">LoginRequest (valida)</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">AuthController</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">JWTAuth::attempt()</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">{ success, user, token }</div>
+      </div>
+
+      <ul class="file-list">
+        <li><span class="file-name">app/Http/Middleware/JwtMiddleware.php</span><span class="file-desc">Valida Bearer token. Alias: <code>jwt.auth</code></span></li>
+        <li><span class="file-name">app/Http/Middleware/RoleMiddleware.php</span><span class="file-desc">Verifica rol(es). Uso: <code>middleware('role:admin')</code></span></li>
+        <li><span class="file-name">app/Http/Controllers/Api/AuthController.php</span><span class="file-desc">login · register · logout · refresh · profile · forgotPassword · resetPassword</span></li>
+        <li><span class="file-name">app/Http/Controllers/Api/ProfileController.php</span><span class="file-desc">PUT /api/auth/profile — editar nombre, email y/o contraseña</span></li>
+        <li><span class="file-name">app/Http/Requests/Auth/*.php</span><span class="file-desc">LoginRequest, RegisterRequest, ForgotPasswordRequest, ResetPasswordRequest, UpdateProfileRequest</span></li>
+        <li><span class="file-name">bootstrap/app.php</span><span class="file-desc">Middleware aliases <code>jwt.auth</code> y <code>role</code> registrados. Rutas api.php activadas.</span></li>
+      </ul>
+    </section>
+
+    <!-- FASE 5 -->
+    <section class="section" id="fase5">
+      <div class="section-header">
+        <div class="section-icon icon-green">5️⃣</div>
+        <h2>Fase 5 — Integración Mercado Libre</h2>
+        <span class="badge badge-done">✓ Completada</span>
+      </div>
+
+      <div class="flow" style="margin:0 0 16px;">
+        <div class="flow-step">GET /meli/connect<br>Genera URL OAuth</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">Redirect a<br>mercadolibre.com.co</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">Usuario autoriza</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">GET /meli/callback<br>?code=xxx</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">Guardar tokens en<br>mercadolibre_accounts</div>
+      </div>
+
+      <ul class="file-list">
+        <li><span class="file-name">app/Services/MercadoLibreService.php</span><span class="file-desc">getProducts, getProduct, createProduct, updateProduct, getOrders, getOrder, getCustomer, uploadImage. Auto-refresh de tokens. Retry exponential backoff: 1s → 3s → 10s en 429.</span></li>
+        <li><span class="file-name">app/Interfaces/MercadolibreAccountRepositoryInterface.php</span><span class="file-desc">Interfaz para el repositorio de cuentas MeLi.</span></li>
+        <li><span class="file-name">app/Repositories/MercadolibreAccountRepository.php</span><span class="file-desc">findActiveByUserId(), findById(), save().</span></li>
+        <li><span class="file-name">app/Http/Controllers/Api/MeliAuthController.php</span><span class="file-desc">connect() genera URL OAuth. callback() intercambia code por tokens. Guarda en BD y redirige.</span></li>
+        <li><span class="file-name">app/Http/Controllers/Api/WebhookController.php</span><span class="file-desc">POST /api/webhooks/mercadolibre — Responde 200 inmediato, valida firma HMAC-SHA256 x-signature, despacha Jobs en background.</span></li>
+        <li><span class="file-name">app/Jobs/SyncProductsJob.php</span><span class="file-desc">Stub — tries=3, timeout=300. Sincroniza productos desde MeLi API.</span></li>
+        <li><span class="file-name">app/Jobs/SyncOrdersJob.php</span><span class="file-desc">Stub — tries=3, timeout=300. Sincroniza órdenes desde MeLi API.</span></li>
+        <li><span class="file-name">app/Jobs/SyncCustomersJob.php</span><span class="file-desc">Stub — tries=3, timeout=300. Sincroniza clientes desde MeLi API.</span></li>
+        <li><span class="file-name">app/Jobs/CalculateStatisticsJob.php</span><span class="file-desc">Stub — calcula estadísticas de ventas por período.</span></li>
+        <li><span class="file-name">app/Events/{MeliTokenRefreshed,SyncFailed,ProductSynced,OrderSynced,CustomerSynced}.php</span><span class="file-desc">5 eventos Dispatchable+SerializesModels.</span></li>
+        <li><span class="file-name">app/Providers/AppServiceProvider.php</span><span class="file-desc">Binding MercadolibreAccountRepositoryInterface → MercadolibreAccountRepository registrado.</span></li>
+      </ul>
+    </section>
+
+    <!-- FASE 6 -->
+    <section class="section" id="fase6">
+      <div class="section-header">
+        <div class="section-icon icon-green">6️⃣</div>
+        <h2>Fase 6 — Módulo de Productos</h2>
+        <span class="badge badge-done">✓ Completada</span>
+      </div>
+
+      <div class="info-box success">
+        <span class="info-icon">✅</span>
+        <span>CRUD completo de productos: API REST + Vistas Blade. Sincronización con MeLi. Upload de imágenes a S3. Filtros, paginación 20/página.</span>
+      </div>
+
+      <h3 style="margin:16px 0 8px;font-size:14px;">Flujo crear producto</h3>
+      <div class="flow">
+        <div class="flow-step">StoreProductRequest<br>(valida datos)</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">ProductController<br>→ $this->authorize</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">ProductService<br>→ upload S3</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">MeliService<br>→ createProduct</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">ProductRepository<br>→ save en BD</div>
+      </div>
+
+      <div class="card" style="margin-top:16px;">
+        <h3>Archivos creados — Capa de datos</h3>
+        <ul class="file-list">
+          <li><span class="file-name">app/Interfaces/ProductRepositoryInterface.php</span><span class="file-desc">9 métodos: paginate(filters), findById, findByMeliId, findActiveByUserId, create, update, delete, topSelling, countByStatus.</span></li>
+          <li><span class="file-name">app/Repositories/ProductRepository.php</span><span class="file-desc">paginate() con filtros search/status/category/min_price/max_price. topSelling() JOIN product_statistics ORDER BY quantity_sold DESC. countByStatus() retorna array ['active'=>N, 'paused'=>N, 'closed'=>N].</span></li>
+          <li><span class="file-name">app/DTOs/ProductDTO.php</span><span class="file-desc">fromArray(). toMeliPayload(meliCategoryId) con currency_id: 'COP'. toArray(). Inmutable.</span></li>
+          <li><span class="file-name">app/Policies/ProductPolicy.php</span><span class="file-desc">viewAny/view: admin|operator. create/update/delete/sync: solo admin.</span></li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>Archivos creados — Lógica de negocio</h3>
+        <ul class="file-list">
+          <li><span class="file-name">app/Services/ProductService.php</span><span class="file-desc">create(): S3 upload → MeLi API → BD. update(): BD + MeLi API. delete(): cierra en MeLi + softDelete. syncFromMeli(): fetch MeLi → actualiza BD. uploadImageToS3AndMeli(): S3 siempre, MeLi upload opcional (non-fatal).</span></li>
+          <li><span class="file-name">app/Http/Requests/Product/StoreProductRequest.php</span><span class="file-desc">Valida: title, price (decimal), stock (integer min 0), condition (new/used), listing_type_id, description, image (file jpg/jpeg/png/webp max 5MB).</span></li>
+          <li><span class="file-name">app/Http/Requests/Product/UpdateProductRequest.php</span><span class="file-desc">Igual pero campos opcionales (sometimes). Mensajes en español.</span></li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>Archivos creados — Controllers</h3>
+        <ul class="file-list">
+          <li><span class="file-name">app/Http/Controllers/Api/ProductController.php</span><span class="file-desc">index, show, store, update, destroy, sync. Respuesta JSON {success, data, message, errors}. Paginación 20/página.</span></li>
+          <li><span class="file-name">app/Http/Controllers/Web/ProductController.php</span><span class="file-desc">index, show, create, store, edit, update, destroy, sync. Retorna vistas Blade. Errores redirigidos con session flash.</span></li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>Archivos creados — Vistas Blade</h3>
+        <ul class="file-list">
+          <li><span class="file-name">resources/views/layouts/app.blade.php</span><span class="file-desc">Layout principal dark. Sidebar fijo #1a1a2e con nav por secciones. Topbar sticky con dropdown usuario. Logout via axios + localStorage. Bootstrap 5.3 + Bootstrap Icons CDN.</span></li>
+          <li><span class="file-name">resources/views/products/index.blade.php</span><span class="file-desc">Grid 4 columnas (col-lg-3). Cards con imagen S3 (onerror fallback), título 2-líneas clamp, precio COP, stock, badge status, time-ago. Panel filtros: search, status, category, min/max price. Paginación withQueryString.</span></li>
+          <li><span class="file-name">resources/views/products/create.blade.php</span><span class="file-desc">Formulario completo. Preview imagen JS en tiempo real. Select tipo publicación (free/bronze/gold_special). Select condición (new/used). Select categoría MeLi.</span></li>
+          <li><span class="file-name">resources/views/products/edit.blade.php</span><span class="file-desc">Formulario pre-llenado. Muestra imagen actual. Botón eliminar con confirm dialog. Indica si está publicado en MeLi.</span></li>
+          <li><span class="file-name">resources/views/products/show.blade.php</span><span class="file-desc">Columna imagen + columna datos. Card estadísticas (units_sold, total_revenue, last_sale_date). Card info MeLi (meli_item_id, listing_type_id, last_sync diffForHumans). Botones Editar/Sincronizar/Ver en MeLi.</span></li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>Rutas registradas</h3>
+        <ul class="route-list">
+          <li class="route-item"><span class="badge badge-get">GET</span><span class="route-path">/api/products</span><span class="route-auth">JWT</span><span class="route-desc">Listado paginado con filtros</span></li>
+          <li class="route-item"><span class="badge badge-post">POST</span><span class="route-path">/api/products</span><span class="route-auth">JWT</span><span class="route-desc">Crear producto + publicar en MeLi</span></li>
+          <li class="route-item"><span class="badge badge-get">GET</span><span class="route-path">/api/products/{id}</span><span class="route-auth">JWT</span><span class="route-desc">Detalle de producto</span></li>
+          <li class="route-item"><span class="badge badge-put">PUT</span><span class="route-path">/api/products/{id}</span><span class="route-auth">JWT</span><span class="route-desc">Actualizar producto + MeLi</span></li>
+          <li class="route-item"><span class="badge badge-delete">DELETE</span><span class="route-path">/api/products/{id}</span><span class="route-auth">JWT</span><span class="route-desc">Cerrar en MeLi + soft delete</span></li>
+          <li class="route-item"><span class="badge badge-post">POST</span><span class="route-path">/api/products/{id}/sync</span><span class="route-auth">JWT</span><span class="route-desc">Sincronizar desde MeLi</span></li>
+          <li class="route-item"><span class="badge badge-get">GET</span><span class="route-path">/products</span><span class="route-auth">JWT</span><span class="route-desc">Vista Blade — listado</span></li>
+          <li class="route-item"><span class="badge badge-get">GET</span><span class="route-path">/products/create</span><span class="route-auth">JWT</span><span class="route-desc">Vista Blade — formulario crear</span></li>
+          <li class="route-item"><span class="badge badge-get">GET</span><span class="route-path">/products/{id}/edit</span><span class="route-auth">JWT</span><span class="route-desc">Vista Blade — formulario editar</span></li>
+          <li class="route-item"><span class="badge badge-get">GET</span><span class="route-path">/products/{id}</span><span class="route-auth">JWT</span><span class="route-desc">Vista Blade — detalle</span></li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>Bindings DI registrados en AppServiceProvider</h3>
+        <ul class="file-list">
+          <li><span class="file-name">MercadolibreAccountRepositoryInterface</span><span class="file-desc">→ MercadolibreAccountRepository</span></li>
+          <li><span class="file-name">ProductRepositoryInterface</span><span class="file-desc">→ ProductRepository</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- FASE 7 -->
+    <section class="section" id="fase7">
+      <div class="section-header">
+        <div class="section-icon icon-green">7️⃣</div>
+        <h2>Fase 7 — Módulo de Ventas</h2>
+        <span class="badge badge-done">✓ Completada</span>
+      </div>
+      <ul class="file-list">
+        <li><span class="file-name">app/Interfaces/OrderRepositoryInterface.php</span><span class="file-desc">9 métodos: paginate(filters), findById, findByMeliOrderId, findByAccountId, create, update, countByStatus, totalRevenue, recentOrders.</span></li>
+        <li><span class="file-name">app/Repositories/OrderRepository.php</span><span class="file-desc">Filtros: status, payment_status, date_from/to, customer_name, min/max_amount. totalRevenue() suma órdenes paid. recentOrders() con límite.</span></li>
+        <li><span class="file-name">app/DTOs/OrderDTO.php</span><span class="file-desc">fromMeliResponse() mapea buyer → customerId, payments → paymentStatus, calcula items con unit_price × quantity.</span></li>
+        <li><span class="file-name">app/Policies/OrderPolicy.php</span><span class="file-desc">viewAny/view: admin|operator. sync: solo admin.</span></li>
+        <li><span class="file-name">app/Services/OrderService.php</span><span class="file-desc">getPaginated(), findById(), syncFromMeli() con ensureCustomer() (Customer::firstOrCreate) y syncOrderItems(). Manejo de errores por orden, log cada fallo.</span></li>
+        <li><span class="file-name">app/Http/Controllers/Api/OrderController.php</span><span class="file-desc">index, show, sync — respuesta JSON {success, data, message, errors}.</span></li>
+        <li><span class="file-name">app/Http/Controllers/Web/OrderController.php</span><span class="file-desc">index, show, sync — vistas Blade con redirect flash.</span></li>
+        <li><span class="file-name">resources/views/orders/index.blade.php</span><span class="file-desc">Tabla con 6 filtros (status, payment_status, fechas, cliente, monto). Badges coloreados por estado. Paginación. Botón Sincronizar MeLi para admin.</span></li>
+        <li><span class="file-name">resources/views/orders/show.blade.php</span><span class="file-desc">Detalle completo: items con imágenes de productos, cantidad × precio unitario = subtotal, total COP. Panel lateral: cliente con link al perfil, info MeLi (meli_order_id, cuenta).</span></li>
+      </ul>
+      <div class="card" style="margin-top:12px;">
+        <h3>Rutas registradas</h3>
+        <ul class="route-list">
+          <li class="route-item"><span class="badge badge-get">GET</span><span class="route-path">/api/orders</span><span class="route-auth">JWT</span><span class="route-desc">Listado paginado con filtros</span></li>
+          <li class="route-item"><span class="badge badge-get">GET</span><span class="route-path">/api/orders/{id}</span><span class="route-auth">JWT</span><span class="route-desc">Detalle de venta</span></li>
+          <li class="route-item"><span class="badge badge-post">POST</span><span class="route-path">/api/orders/sync</span><span class="route-auth">JWT · admin</span><span class="route-desc">Sincronizar desde MeLi</span></li>
+          <li class="route-item"><span class="badge badge-get">GET</span><span class="route-path">/orders</span><span class="route-auth">JWT</span><span class="route-desc">Vista Blade — tabla de ventas</span></li>
+          <li class="route-item"><span class="badge badge-get">GET</span><span class="route-path">/orders/{id}</span><span class="route-auth">JWT</span><span class="route-desc">Vista Blade — detalle de venta</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- FASE 8 -->
+    <section class="section" id="fase8">
+      <div class="section-header">
+        <div class="section-icon icon-green">8️⃣</div>
+        <h2>Fase 8 — Módulo de Clientes</h2>
+        <span class="badge badge-done">✓ Completada</span>
+      </div>
+      <ul class="file-list">
+        <li><span class="file-name">app/Interfaces/CustomerRepositoryInterface.php</span><span class="file-desc">8 métodos: paginate, findById, findByMeliCustomerId, findByAccountId, create, update, topBuyers, count.</span></li>
+        <li><span class="file-name">app/Repositories/CustomerRepository.php</span><span class="file-desc">paginate() con withCount('orders') + withSum('orders','total_amount'). topBuyers() ORDER BY orders_sum_total_amount DESC. Filtro search por name/nickname/email.</span></li>
+        <li><span class="file-name">app/DTOs/CustomerDTO.php</span><span class="file-desc">fromMeliResponse() concatena first_name + last_name → name. phone desde data['phone']['number']. toArray() mapea a campos del modelo.</span></li>
+        <li><span class="file-name">app/Policies/CustomerPolicy.php</span><span class="file-desc">viewAny/view: admin|operator.</span></li>
+        <li><span class="file-name">app/Services/CustomerService.php</span><span class="file-desc">getPaginated(), findById(), syncFromMeli() (itera meli_customer_ids existentes y llama getCustomer()), getTopBuyers().</span></li>
+        <li><span class="file-name">app/Http/Controllers/Api/CustomerController.php</span><span class="file-desc">index, show, orders (GET /customers/{id}/orders).</span></li>
+        <li><span class="file-name">app/Http/Controllers/Web/CustomerController.php</span><span class="file-desc">index, show — calcula totalSpent (sum paid orders) y ticket promedio en el controller.</span></li>
+        <li><span class="file-name">resources/views/customers/index.blade.php</span><span class="file-desc">Tabla con avatar inicial, nombre/nickname, email, órdenes count, total comprado COP. Filtro de búsqueda. Paginación.</span></li>
+        <li><span class="file-name">resources/views/customers/show.blade.php</span><span class="file-desc">Perfil centrado con avatar, métricas (total órdenes, total gastado, ticket promedio, última compra). Historial completo de órdenes con items resumidos y link a detalle.</span></li>
+      </ul>
+      <div class="card" style="margin-top:12px;">
+        <h3>Rutas registradas</h3>
+        <ul class="route-list">
+          <li class="route-item"><span class="badge badge-get">GET</span><span class="route-path">/api/customers</span><span class="route-auth">JWT</span><span class="route-desc">Listado paginado</span></li>
+          <li class="route-item"><span class="badge badge-get">GET</span><span class="route-path">/api/customers/{id}</span><span class="route-auth">JWT</span><span class="route-desc">Perfil del cliente</span></li>
+          <li class="route-item"><span class="badge badge-get">GET</span><span class="route-path">/api/customers/{id}/orders</span><span class="route-auth">JWT</span><span class="route-desc">Órdenes del cliente</span></li>
+          <li class="route-item"><span class="badge badge-get">GET</span><span class="route-path">/customers</span><span class="route-auth">JWT</span><span class="route-desc">Vista Blade — listado</span></li>
+          <li class="route-item"><span class="badge badge-get">GET</span><span class="route-path">/customers/{id}</span><span class="route-auth">JWT</span><span class="route-desc">Vista Blade — perfil con historial</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- FASE 9 -->
+    <section class="section" id="fase9">
+      <div class="section-header">
+        <div class="section-icon icon-green">9️⃣</div>
+        <h2>Fase 9 — Dashboard</h2>
+        <span class="badge badge-done">✓ Completada</span>
+      </div>
+      <ul class="file-list">
+        <li><span class="file-name">app/Services/DashboardService.php</span><span class="file-desc">getMetrics(): 11 KPIs (products_active/paused, orders_paid/pending, total_customers, month_revenue, avg_ticket, low_stock_count). getDailySales(): últimos 30 días agrupados por DATE(order_date). getMonthlyRevenue(): 6 meses con DATE_FORMAT. getAlerts(): stock ≤5 + órdenes pendientes.</span></li>
+        <li><span class="file-name">app/Http/Controllers/Api/DashboardController.php</span><span class="file-desc">index (métricas), topProducts, salesSummary (daily+monthly), alerts — 4 endpoints JSON.</span></li>
+        <li><span class="file-name">app/Http/Controllers/Web/DashboardController.php</span><span class="file-desc">index() — carga los 6 datasets (metrics, topProducts, recentOrders, alerts, dailySales, monthlyRevenue) y los pasa a la vista.</span></li>
+        <li><span class="file-name">resources/views/dashboard/index.blade.php</span><span class="file-desc">8 tarjetas KPI (2 filas). 3 gráficos Chart.js: línea ventas diarias 30d, dona estado órdenes, barras ingresos mensuales 6m. Top 10 productos con ranking (🥇🥈🥉). Tabla últimas 20 ventas con status badge. Alertas contextuales (stock bajo, órdenes pendientes).</span></li>
+      </ul>
+      <div class="card" style="margin-top:12px;">
+        <h3>Rutas registradas</h3>
+        <ul class="route-list">
+          <li class="route-item"><span class="badge badge-get">GET</span><span class="route-path">/dashboard</span><span class="route-auth">JWT</span><span class="route-desc">Vista Blade — dashboard completo</span></li>
+          <li class="route-item"><span class="badge badge-get">GET</span><span class="route-path">/api/dashboard</span><span class="route-auth">JWT</span><span class="route-desc">11 métricas generales</span></li>
+          <li class="route-item"><span class="badge badge-get">GET</span><span class="route-path">/api/dashboard/top-products</span><span class="route-auth">JWT</span><span class="route-desc">Top 10 productos más vendidos</span></li>
+          <li class="route-item"><span class="badge badge-get">GET</span><span class="route-path">/api/dashboard/sales-summary</span><span class="route-auth">JWT</span><span class="route-desc">Datos para gráficos (daily + monthly)</span></li>
+          <li class="route-item"><span class="badge badge-get">GET</span><span class="route-path">/api/dashboard/alerts</span><span class="route-auth">JWT</span><span class="route-desc">Alertas de stock y órdenes pendientes</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- FASE 10 -->
+    <section class="section" id="fase10">
+      <div class="section-header">
+        <div class="section-icon icon-green">🔟</div>
+        <h2>Fase 10 — Reportes</h2>
+        <span class="badge badge-done">✓ Completada</span>
+      </div>
+      <ul class="file-list">
+        <li><span class="file-name">app/Exports/SalesExport.php</span><span class="file-desc">FromCollection + WithHeadings + ShouldAutoSize + WithStyles. 9 columnas: ID, ID MeLi, Cliente, Total COP, Estado, Pago, Envío, Fecha, Productos.</span></li>
+        <li><span class="file-name">app/Exports/ProductsExport.php</span><span class="file-desc">10 columnas: ID MeLi, Título, Categoría, Precio COP, Stock, Estado, Uds. Vendidas, Ingresos COP, Última Venta, Última Sync.</span></li>
+        <li><span class="file-name">app/Exports/CustomersExport.php</span><span class="file-desc">9 columnas: ID MeLi, Nombre, Nickname, Email, Teléfono, Total Órdenes, Total Gastado, Ticket Promedio, Fecha Registro.</span></li>
+        <li><span class="file-name">app/Policies/ReportPolicy.php</span><span class="file-desc">view: admin|operator. export: solo admin.</span></li>
+        <li><span class="file-name">app/Services/ReportService.php</span><span class="file-desc">getSalesByDateRange() filtra órdenes por rango. getTopProducts() → ProductRepository.topSelling. getTopCustomers() → CustomerRepository.topBuyers. exportSales/Products/Customers() → Excel::download() retorna BinaryFileResponse.</span></li>
+        <li><span class="file-name">app/Http/Controllers/Api/ReportController.php</span><span class="file-desc">sales, topProducts, topCustomers (JSON) + exportSales, exportProducts, exportCustomers (descarga directa).</span></li>
+        <li><span class="file-name">app/Http/Controllers/Web/ReportController.php</span><span class="file-desc">sales (default: inicio de mes → hoy), products, customers + exportaciones.</span></li>
+        <li><span class="file-name">resources/views/reports/sales.blade.php</span><span class="file-desc">Filtro fecha desde/hasta. 4 tarjetas KPI (total, pagadas, ingresos, ticket promedio). Tabla completa con link a detalle. Botón exportar Excel (solo admin).</span></li>
+        <li><span class="file-name">resources/views/reports/products.blade.php</span><span class="file-desc">Top 20 con ranking 🥇🥈🥉, imagen, título, categoría, precio, stock (rojo si ≤5), uds. vendidas, ingresos COP, link a detalle.</span></li>
+        <li><span class="file-name">resources/views/reports/customers.blade.php</span><span class="file-desc">Top 20 con ranking, nombre/nickname, contacto, órdenes count, total gastado, ticket promedio, link al perfil.</span></li>
+      </ul>
+      <div class="card" style="margin-top:12px;">
+        <h3>Rutas registradas (12)</h3>
+        <ul class="route-list">
+          <li class="route-item"><span class="badge badge-get">GET</span><span class="route-path">/reports/sales</span><span class="route-auth">JWT</span><span class="route-desc">Ventas por rango de fechas</span></li>
+          <li class="route-item"><span class="badge badge-get">GET</span><span class="route-path">/reports/products</span><span class="route-auth">JWT</span><span class="route-desc">Top 20 productos más vendidos</span></li>
+          <li class="route-item"><span class="badge badge-get">GET</span><span class="route-path">/reports/customers</span><span class="route-auth">JWT</span><span class="route-desc">Top 20 clientes más activos</span></li>
+          <li class="route-item"><span class="badge badge-get">GET</span><span class="route-path">/reports/export/sales</span><span class="route-auth">JWT · admin</span><span class="route-desc">Descarga Excel de ventas</span></li>
+          <li class="route-item"><span class="badge badge-get">GET</span><span class="route-path">/reports/export/products</span><span class="route-auth">JWT · admin</span><span class="route-desc">Descarga Excel de productos</span></li>
+          <li class="route-item"><span class="badge badge-get">GET</span><span class="route-path">/reports/export/customers</span><span class="route-auth">JWT · admin</span><span class="route-desc">Descarga Excel de clientes</span></li>
+          <li class="route-item"><span class="badge badge-get">GET</span><span class="route-path">/api/reports/sales</span><span class="route-auth">JWT</span><span class="route-desc">Datos JSON de ventas</span></li>
+          <li class="route-item"><span class="badge badge-get">GET</span><span class="route-path">/api/reports/top-products</span><span class="route-auth">JWT</span><span class="route-desc">Top productos JSON</span></li>
+          <li class="route-item"><span class="badge badge-get">GET</span><span class="route-path">/api/reports/top-customers</span><span class="route-auth">JWT</span><span class="route-desc">Top clientes JSON</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- FASE 11 -->
+    <section class="section" id="fase11">
+      <div class="section-header">
+        <div class="section-icon icon-green">⚙️</div>
+        <h2>Fase 11 — Jobs / Scheduler</h2>
+        <span class="badge badge-done">✓ Completada</span>
+      </div>
+
+      <div class="card">
+        <h3>Jobs implementados</h3>
+        <ul class="file-list">
+          <li><span class="file-name">app/Jobs/SyncProductsJob.php</span><span class="file-desc">Pagina resultados MeLi (limit 50), crea/actualiza productos, despacha ProductSynced. Manejo per-ítem para no abortar batch.</span></li>
+          <li><span class="file-name">app/Jobs/SyncOrdersJob.php</span><span class="file-desc">Filtra órdenes desde las últimas 24h (configurable). Usa DB::transaction por orden. Crea Customer si no existe. Sincroniza OrderItems con product_id resuelto.</span></li>
+          <li><span class="file-name">app/Jobs/SyncCustomersJob.php</span><span class="file-desc">Itera clientes existentes con meli_customer_id via chunkById(50). Refresca name, email, phone, nickname. Despacha CustomerSynced.</span></li>
+          <li><span class="file-name">app/Jobs/CalculateStatisticsJob.php</span><span class="file-desc">Recalcula sales_statistics (GROUP BY DATE) y product_statistics (JOIN order_items) para todas las órdenes paid de la cuenta.</span></li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>Listeners (ShouldQueue)</h3>
+        <ul class="file-list">
+          <li><span class="file-name">UpdateProductStatistics</span><span class="file-desc">ProductSynced → recalcula quantity_sold + total_revenue desde order_items JOIN orders.</span></li>
+          <li><span class="file-name">UpdateSalesStatistics</span><span class="file-desc">OrderSynced → actualiza sales_statistics del día + product_statistics de cada item.</span></li>
+          <li><span class="file-name">LogCustomerActivity</span><span class="file-desc">CustomerSynced → Log::channel('stack').</span></li>
+          <li><span class="file-name">LogTokenRefresh</span><span class="file-desc">MeliTokenRefreshed → Log::info con account_id y expires_at.</span></li>
+          <li><span class="file-name">NotifyAdminOfFailure</span><span class="file-desc">SyncFailed → Log::error (extensible a email/Slack).</span></li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>Artisan Commands</h3>
+        <pre>php artisan sync:products [--account=ID]       # Encola SyncProductsJob por cuenta
+php artisan sync:orders [--account=ID] [--from=ISO8601]  # Encola SyncOrdersJob
+php artisan sync:customers [--account=ID]      # Encola SyncCustomersJob
+php artisan calculate:statistics [--account=ID] # Encola CalculateStatisticsJob</pre>
+      </div>
+
+      <div class="card">
+        <h3>Scheduler (routes/console.php)</h3>
+        <pre>Schedule::command('sync:products')->everyThirtyMinutes();
+Schedule::command('sync:orders')->everyTenMinutes();
+Schedule::command('sync:customers')->hourly();
+Schedule::command('calculate:statistics')->hourly();</pre>
+        <p style="margin-top:8px;color:var(--text-muted);font-size:12px;">Activar con: <code>php artisan schedule:run</code> (cron: <code>* * * * * php artisan schedule:run</code>)</p>
+      </div>
+
+      <div class="card">
+        <h3>Event → Listener bindings (AppServiceProvider)</h3>
+        <ul class="route-list">
+          <li class="route-item"><span class="badge badge-post">EVENT</span><span class="route-path">ProductSynced</span><span class="route-desc">→ UpdateProductStatistics (queued)</span></li>
+          <li class="route-item"><span class="badge badge-post">EVENT</span><span class="route-path">OrderSynced</span><span class="route-desc">→ UpdateSalesStatistics (queued)</span></li>
+          <li class="route-item"><span class="badge badge-get">EVENT</span><span class="route-path">CustomerSynced</span><span class="route-desc">→ LogCustomerActivity</span></li>
+          <li class="route-item"><span class="badge badge-get">EVENT</span><span class="route-path">MeliTokenRefreshed</span><span class="route-desc">→ LogTokenRefresh</span></li>
+          <li class="route-item"><span class="badge badge-delete">EVENT</span><span class="route-path">SyncFailed</span><span class="route-desc">→ NotifyAdminOfFailure</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- FASE 12 -->
+    <section class="section" id="fase12">
+      <div class="section-header">
+        <div class="section-icon icon-green">🧪</div>
+        <h2>Fase 12 — Tests</h2>
+        <span class="badge badge-done">✓ Completada</span>
+      </div>
+
+      <div class="card">
+        <h3>Factories</h3>
+        <ul class="file-list">
+          <li><span class="file-name">database/factories/UserFactory.php</span><span class="file-desc">Con estado <code>unverified()</code>.</span></li>
+          <li><span class="file-name">database/factories/MercadolibreAccountFactory.php</span><span class="file-desc">access_token, refresh_token, expires_at (+6h).</span></li>
+          <li><span class="file-name">database/factories/ProductFactory.php</span><span class="file-desc">Estados: <code>active()</code>, <code>paused()</code>, <code>outOfStock()</code>.</span></li>
+          <li><span class="file-name">database/factories/OrderFactory.php</span><span class="file-desc">Estados: <code>paid()</code>, <code>pending()</code>.</span></li>
+          <li><span class="file-name">database/factories/OrderItemFactory.php</span><span class="file-desc">total_price calculado (quantity × unit_price).</span></li>
+          <li><span class="file-name">database/factories/CustomerFactory.php</span><span class="file-desc">meli_customer_id único.</span></li>
+          <li><span class="file-name">database/factories/CategoryFactory.php</span><span class="file-desc">meli_category_id único tipo MCO####.</span></li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>Feature Tests (API)</h3>
+        <ul class="file-list">
+          <li><span class="file-name">tests/Feature/AuthControllerTest.php</span><span class="file-desc">Login válido/inválido, validación, registro con rol operator, perfil autenticado, logout.</span></li>
+          <li><span class="file-name">tests/Feature/ProductControllerTest.php</span><span class="file-desc">Index con cuenta, 404 sin cuenta, show 200/404, store como admin (Http::fake), 403 operator, soft delete.</span></li>
+          <li><span class="file-name">tests/Feature/OrderControllerTest.php</span><span class="file-desc">Index paginado, 401 sin token, acceso operator, show 200/404, sync admin/403 operator, filtro por status.</span></li>
+          <li><span class="file-name">tests/Feature/CustomerControllerTest.php</span><span class="file-desc">Index paginado, acceso operator, show 200/404, orders de cliente, filtro por nombre.</span></li>
+          <li><span class="file-name">tests/Feature/DashboardControllerTest.php</span><span class="file-desc">Métricas 11 KPIs, top products, sales summary (daily+monthly), alerts con stock bajo + pending orders.</span></li>
+          <li><span class="file-name">tests/Feature/ReportControllerTest.php</span><span class="file-desc">Sales admin/operator, top products/customers, export solo admin, filtro por rango de fechas.</span></li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>Unit Tests (Services)</h3>
+        <ul class="file-list">
+          <li><span class="file-name">tests/Unit/ProductServiceTest.php</span><span class="file-desc">Mockery para repos + MeliService. Prueba: list(), find(), delete() con/sin meli_item_id, create() dispara ProductSynced, syncFromMeli() actualiza y dispara evento.</span></li>
+          <li><span class="file-name">tests/Unit/MercadoLibreServiceTest.php</span><span class="file-desc">Http::fake() para todos los endpoints. Prueba: getProducts, getProduct, getOrders, getCustomer, refreshToken dispara MeliTokenRefreshed, auto-refresh cuando expires_at &lt; 5min, retry en 429 (3 intentos).</span></li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>Infraestructura de tests</h3>
+        <pre>// tests/TestCase.php
+use RefreshDatabase;
+setUp() → seed(RoleSeeder::class)   // roles disponibles en cada test
+createAdmin() / createOperator()    // usuarios con rol correcto
+authHeaders(User $user): array      // Bearer token JWT real
+
+// phpunit.xml (ya configurado)
+DB_CONNECTION=sqlite · DB_DATABASE=:memory:
+QUEUE_CONNECTION=sync               // Jobs sincrónicos en tests
+CACHE_STORE=array · SESSION_DRIVER=array</pre>
+        <p style="margin-top:8px;color:var(--text-muted);font-size:12px;">Correr: <code>php artisan test</code> | Con cobertura: <code>php artisan test --coverage --min=80</code></p>
+      </div>
+    </section>
+
+    <!-- API REST -->
+    <section class="section" id="api">
+      <div class="section-header">
+        <div class="section-icon icon-blue">🔌</div>
+        <h2>API REST — Estado actual</h2>
+      </div>
+      <div class="card">
+        <h3>Auth (públicos)</h3>
+        <ul class="route-list">
+          <li class="route-item"><span class="badge badge-post">POST</span><span class="route-path">/api/auth/login</span><span class="route-desc">Retorna JWT token · ✅ Probado</span></li>
+          <li class="route-item"><span class="badge badge-post">POST</span><span class="route-path">/api/auth/register</span><span class="route-desc">Registro de usuario</span></li>
+          <li class="route-item"><span class="badge badge-post">POST</span><span class="route-path">/api/auth/forgot-password</span><span class="route-desc">Envía email de reset</span></li>
+          <li class="route-item"><span class="badge badge-post">POST</span><span class="route-path">/api/auth/reset-password</span><span class="route-desc">Restablece contraseña</span></li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Auth (protegidos) <span class="route-auth">JWT</span></h3>
+        <ul class="route-list">
+          <li class="route-item"><span class="badge badge-post">POST</span><span class="route-path">/api/auth/logout</span><span class="route-desc">Invalida token</span></li>
+          <li class="route-item"><span class="badge badge-post">POST</span><span class="route-path">/api/auth/refresh</span><span class="route-desc">Renueva token</span></li>
+          <li class="route-item"><span class="badge badge-get">GET</span><span class="route-path">/api/auth/profile</span><span class="route-desc">Perfil del usuario</span></li>
+          <li class="route-item"><span class="badge badge-put">PUT</span><span class="route-path">/api/auth/profile</span><span class="route-desc">Actualizar perfil</span></li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Productos <span class="route-auth">JWT</span></h3>
+        <ul class="route-list">
+          <li class="route-item"><span class="badge badge-get">GET</span><span class="route-path">/api/products</span><span class="route-desc">Listado paginado (20/pág) con filtros</span></li>
+          <li class="route-item"><span class="badge badge-post">POST</span><span class="route-path">/api/products</span><span class="route-desc">Crear y publicar en MeLi · solo admin</span></li>
+          <li class="route-item"><span class="badge badge-get">GET</span><span class="route-path">/api/products/{id}</span><span class="route-desc">Detalle del producto</span></li>
+          <li class="route-item"><span class="badge badge-put">PUT</span><span class="route-path">/api/products/{id}</span><span class="route-desc">Actualizar producto + MeLi · solo admin</span></li>
+          <li class="route-item"><span class="badge badge-delete">DELETE</span><span class="route-path">/api/products/{id}</span><span class="route-desc">Cerrar en MeLi + soft delete · solo admin</span></li>
+          <li class="route-item"><span class="badge badge-post">POST</span><span class="route-path">/api/products/{id}/sync</span><span class="route-desc">Forzar sincronización desde MeLi</span></li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>MeLi OAuth + Webhook</h3>
+        <ul class="route-list">
+          <li class="route-item"><span class="badge badge-get">GET</span><span class="route-path">/meli/connect</span><span class="route-desc">Iniciar flujo OAuth2 MCO</span></li>
+          <li class="route-item"><span class="badge badge-get">GET</span><span class="route-path">/meli/callback</span><span class="route-desc">Callback OAuth2 — guarda tokens</span></li>
+          <li class="route-item"><span class="badge badge-post">POST</span><span class="route-path">/api/webhooks/mercadolibre</span><span class="route-desc">Notificaciones en tiempo real (sin JWT · firma HMAC)</span></li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Próximos endpoints (Fases 7–10)</h3>
+        <ul class="route-list">
+          <li class="route-item"><span class="badge badge-get">GET</span><span class="route-path">/api/orders</span><span class="route-desc">Listado de ventas (Fase 7)</span></li>
+          <li class="route-item"><span class="badge badge-get">GET</span><span class="route-path">/api/orders/{id}</span><span class="route-desc">Detalle de venta (Fase 7)</span></li>
+          <li class="route-item"><span class="badge badge-get">GET</span><span class="route-path">/api/customers</span><span class="route-desc">Listado de clientes (Fase 8)</span></li>
+          <li class="route-item"><span class="badge badge-get">GET</span><span class="route-path">/api/dashboard</span><span class="route-desc">Métricas generales (Fase 9)</span></li>
+          <li class="route-item"><span class="badge badge-get">GET</span><span class="route-path">/api/reports/sales</span><span class="route-desc">Reporte ventas por fecha (Fase 10)</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- CREDENTIALS -->
+    <section class="section" id="credentials">
+      <div class="section-header">
+        <div class="section-icon icon-red">🔐</div>
+        <h2>Credenciales de Desarrollo</h2>
+      </div>
+      <div class="info-box warning">
+        <span class="info-icon">⚠️</span>
+        <span>Solo para desarrollo local. Cambiar antes de producción.</span>
+      </div>
+      <div class="cred-box">
+        <div class="cred-row"><span class="cred-label">Admin email</span><span class="cred-value">admin@marketplace.com</span></div>
+        <div class="cred-row"><span class="cred-label">Admin password</span><span class="cred-value">password</span></div>
+        <div class="cred-row"><span class="cred-label">Operador email</span><span class="cred-value">operador@marketplace.com</span></div>
+        <div class="cred-row"><span class="cred-label">Operador password</span><span class="cred-value">password</span></div>
+        <div class="cred-row"><span class="cred-label">DB</span><span class="cred-value">marketplace_manager (MySQL 8 · root sin password)</span></div>
+        <div class="cred-row"><span class="cred-label">URL dev</span><span class="cred-value">http://localhost:8000</span></div>
+        <div class="cred-row"><span class="cred-label">Swagger UI</span><span class="cred-value">http://localhost:8000/api/documentation</span></div>
+      </div>
+
+      <div class="card" style="margin-top:16px;">
+        <h3>Comandos rápidos</h3>
+        <pre>php artisan serve                    # Iniciar servidor
+php artisan queue:listen             # Procesar Jobs
+php artisan migrate:fresh --seed     # Reset BD completo
+php artisan route:list --path=api    # Ver rutas API
+php artisan route:list --path=products  # Ver rutas productos
+php artisan test                     # Correr todos los tests</pre>
+      </div>
+    </section>
+
+    <footer style="border-top:1px solid var(--border);padding-top:24px;color:var(--text-muted);font-size:11px;text-align:center;">
+      Documentación generada automáticamente · Marketplace Manager MeLi Colombia · Proyecto 100% completado — 12/12 fases
+    </footer>
+
+  </main>
+</div>
+</body>
+</html>
