@@ -1,10 +1,18 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-theme="dark" data-bs-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Marketplace Manager') — MeLi Colombia</title>
+    <script>
+        (function () {
+            var theme = 'dark';
+            try { theme = localStorage.getItem('theme') || 'dark'; } catch (e) {}
+            document.documentElement.setAttribute('data-theme', theme);
+            document.documentElement.setAttribute('data-bs-theme', theme);
+        })();
+    </script>
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -20,12 +28,88 @@
             --dark-base:    #101d34;
             --dark-sidebar: #0b1628;
             --dark-card:    #182844;
+            --surface-raised: #182844;
+            --topbar-bg:    rgba(12,22,40,.88);
             --border-glow:  rgba(0,212,255,.22);
             --border-card:  rgba(70,100,160,.45);
+            --row-border:   rgba(0,212,255,.06);
+            --text-strong:  #ffffff;
             --text-primary: #e2e8f0;
             --text-muted:   #8097b8;
             --text-dim:     #a8bcd4;
+            --text-faint:   #475569;
+            --nav-section:  #2d3e5e;
+            --hover-bg:     rgba(0,212,255,.05);
+            --active-bg:    rgba(0,212,255,.12);
+            --overlay-soft: rgba(255,255,255,.04);
+            --control-bg:   rgba(255,255,255,.05);
+            --control-focus-bg: rgba(0,212,255,.05);
+            --shadow-strong: rgba(0,0,0,.5);
+            --success-fg:   #34d399;
+            --warning-fg:   #fbbf24;
+            --danger-fg:    #f87171;
+            --info-fg:      #93c5fd;
+            --chart-grid:   rgba(0,212,255,.06);
+            --chart-tick:   #475569;
+            --pagination-active-fg: #000;
+            color-scheme: dark;
         }
+
+        [data-theme="light"] {
+            --neon-blue:    #0284c7;
+            --neon-purple:  #6d28d9;
+            --neon-green:   #059669;
+            --neon-yellow:  #b45309;
+            --dark-base:    #f1f5f9;
+            --dark-sidebar: #ffffff;
+            --dark-card:    #ffffff;
+            --surface-raised: #ffffff;
+            --topbar-bg:    rgba(255,255,255,.9);
+            --border-glow:  rgba(2,132,199,.18);
+            --border-card:  #e2e8f0;
+            --row-border:   #eef2f7;
+            --text-strong:  #0f172a;
+            --text-primary: #1e293b;
+            --text-muted:   #64748b;
+            --text-dim:     #334155;
+            --text-faint:   #64748b;
+            --nav-section:  #94a3b8;
+            --hover-bg:     rgba(2,132,199,.06);
+            --active-bg:    rgba(2,132,199,.1);
+            --overlay-soft: rgba(15,23,42,.03);
+            --control-bg:   #ffffff;
+            --control-focus-bg: #ffffff;
+            --shadow-strong: rgba(15,23,42,.12);
+            --success-fg:   #047857;
+            --warning-fg:   #b45309;
+            --danger-fg:    #dc2626;
+            --info-fg:      #1d4ed8;
+            --chart-grid:   rgba(15,23,42,.06);
+            --chart-tick:   #64748b;
+            --pagination-active-fg: #fff;
+            color-scheme: light;
+        }
+
+        [data-theme="light"] .glass-card,
+        [data-theme="light"] .metric-card,
+        [data-theme="light"] .chart-card,
+        [data-theme="light"] .product-card,
+        [data-theme="light"] .filter-panel { box-shadow: 0 1px 3px rgba(15,23,42,.06); }
+        [data-theme="light"] .sidebar-brand h5 { -webkit-text-fill-color: var(--text-strong); background: none; }
+        [data-theme="light"] .store-btn .store-dot { box-shadow: none; }
+
+        .theme-toggle {
+            background: var(--control-bg);
+            border: 1px solid var(--border-glow);
+            border-radius: 10px;
+            color: var(--text-dim);
+            width: 38px; height: 38px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all .2s;
+        }
+        .theme-toggle:hover { color: var(--neon-blue); border-color: var(--neon-blue); }
 
         * { box-sizing: border-box; }
         body {
@@ -53,7 +137,7 @@
         .sidebar-brand {
             padding: 22px 18px 20px;
             border-bottom: 1px solid var(--border-glow);
-            background: rgba(0,212,255,.03);
+            background: var(--hover-bg);
         }
         .sidebar-brand-icon {
             width: 36px; height: 36px;
@@ -71,7 +155,7 @@
             font-size: 14px;
             font-weight: 700;
             margin: 0;
-            background: linear-gradient(90deg, #fff, var(--neon-blue));
+            background: linear-gradient(90deg, var(--text-strong), var(--neon-blue));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
@@ -88,12 +172,12 @@
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 1.5px;
-            color: #2d3e5e;
+            color: var(--nav-section);
         }
 
         /* Nav links */
         .nav-link {
-            color: #475569;
+            color: var(--text-faint);
             padding: 9px 18px;
             font-size: 13px;
             font-weight: 500;
@@ -107,12 +191,12 @@
         .nav-link i { font-size: 15px; width: 18px; flex-shrink: 0; }
         .nav-link:hover {
             color: var(--text-dim);
-            background: rgba(0,212,255,.05);
-            border-left-color: rgba(0,212,255,.3);
+            background: var(--hover-bg);
+            border-left-color: var(--border-glow);
         }
         .nav-link.active {
-            color: #fff;
-            background: linear-gradient(90deg, rgba(0,212,255,.12), transparent);
+            color: var(--text-strong);
+            background: linear-gradient(90deg, var(--active-bg), transparent);
             border-left-color: var(--neon-blue);
         }
         .nav-link.active i { color: var(--neon-blue); }
@@ -122,8 +206,8 @@
             margin: 4px 12px 4px;
         }
         .store-switcher .store-btn {
-            background: rgba(0,212,255,.06);
-            border: 1px solid rgba(0,212,255,.15);
+            background: var(--hover-bg);
+            border: 1px solid var(--border-glow);
             border-radius: 10px;
             color: var(--text-dim);
             font-size: 12px;
@@ -136,9 +220,9 @@
             transition: all .2s;
         }
         .store-switcher .store-btn:hover {
-            background: rgba(0,212,255,.1);
-            border-color: rgba(0,212,255,.3);
-            color: #fff;
+            background: var(--active-bg);
+            border-color: var(--neon-blue);
+            color: var(--text-strong);
         }
         .store-btn .store-dot {
             width: 7px; height: 7px;
@@ -155,12 +239,12 @@
             text-align: left;
         }
         .dropdown-menu-dark-custom {
-            background: #182844;
+            background: var(--surface-raised);
             border: 1px solid var(--border-glow);
             border-radius: 12px;
             padding: 6px;
             min-width: 220px;
-            box-shadow: 0 16px 48px rgba(0,0,0,.5);
+            box-shadow: 0 16px 48px var(--shadow-strong);
         }
         .dropdown-menu-dark-custom .dropdown-item {
             color: var(--text-dim);
@@ -173,8 +257,8 @@
             gap: 8px;
         }
         .dropdown-menu-dark-custom .dropdown-item:hover {
-            background: rgba(0,212,255,.1);
-            color: #fff;
+            background: var(--active-bg);
+            color: var(--text-strong);
         }
         .dropdown-menu-dark-custom .dropdown-divider {
             border-color: var(--border-glow);
@@ -196,7 +280,7 @@
         #main-content { margin-left: var(--sidebar-w); }
 
         .topbar {
-            background: rgba(12,22,40,.88);
+            background: var(--topbar-bg);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
             border-bottom: 1px solid var(--border-glow);
@@ -211,7 +295,7 @@
         .page-title {
             font-size: 17px;
             font-weight: 700;
-            color: #fff;
+            color: var(--text-strong);
             margin: 0;
             letter-spacing: -.2px;
         }
@@ -219,7 +303,7 @@
 
         /* User dropdown */
         .user-btn {
-            background: rgba(255,255,255,.05);
+            background: var(--control-bg);
             border: 1px solid var(--border-glow);
             border-radius: 10px;
             color: var(--text-dim);
@@ -232,9 +316,9 @@
             transition: all .2s;
         }
         .user-btn:hover {
-            background: rgba(0,212,255,.08);
-            border-color: rgba(0,212,255,.3);
-            color: #fff;
+            background: var(--active-bg);
+            border-color: var(--neon-blue);
+            color: var(--text-strong);
         }
         .user-avatar {
             width: 28px; height: 28px;
@@ -259,8 +343,8 @@
             transition: border-color .2s, box-shadow .2s;
         }
         .glass-card:hover {
-            border-color: rgba(0,212,255,.35);
-            box-shadow: 0 8px 32px rgba(0,0,0,.25), 0 0 0 1px rgba(0,212,255,.08);
+            border-color: var(--border-glow);
+            box-shadow: 0 8px 32px var(--shadow-strong);
         }
 
         /* KPI metric cards */
@@ -272,8 +356,8 @@
             transition: all .2s;
         }
         .metric-card:hover {
-            border-color: rgba(0,212,255,.4);
-            box-shadow: 0 4px 20px rgba(0,0,0,.2), 0 0 20px rgba(0,212,255,.06);
+            border-color: var(--border-glow);
+            box-shadow: 0 4px 20px var(--shadow-strong);
             transform: translateY(-2px);
         }
         .metric-label {
@@ -287,7 +371,7 @@
         .metric-value {
             font-size: 28px;
             font-weight: 800;
-            color: #fff;
+            color: var(--text-strong);
             line-height: 1;
         }
 
@@ -316,7 +400,7 @@
             border-radius: 16px;
             padding: 24px;
         }
-        .chart-title { font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 2px; }
+        .chart-title { font-size: 13px; font-weight: 700; color: var(--text-strong); margin-bottom: 2px; }
         .chart-subtitle { font-size: 11px; color: var(--text-muted); margin-bottom: 18px; }
 
         /* Product cards */
@@ -329,14 +413,14 @@
             height: 100%;
         }
         .product-card:hover {
-            border-color: rgba(0,212,255,.3);
-            box-shadow: 0 8px 24px rgba(0,0,0,.3);
+            border-color: var(--border-glow);
+            box-shadow: 0 8px 24px var(--shadow-strong);
             transform: translateY(-3px);
         }
         .product-card .product-img {
             width: 100%; height: 180px;
             object-fit: contain;
-            background: rgba(255,255,255,.03);
+            background: var(--overlay-soft);
             padding: 12px;
         }
         .product-card .product-body { padding: 14px; }
@@ -351,16 +435,16 @@
             overflow: hidden;
             min-height: 38px;
         }
-        .product-card .product-price { font-size: 17px; font-weight: 800; color: #fff; margin: 6px 0; }
+        .product-card .product-price { font-size: 17px; font-weight: 800; color: var(--text-strong); margin: 6px 0; }
         .product-card .product-meta { font-size: 11px; color: var(--text-muted); }
 
         /* Status badges */
-        .badge-active  { background:rgba(16,185,129,.15); color:#34d399; border:1px solid rgba(16,185,129,.2); }
-        .badge-paused  { background:rgba(245,158,11,.12); color:#fbbf24; border:1px solid rgba(245,158,11,.2); }
-        .badge-closed  { background:rgba(239,68,68,.12);  color:#f87171; border:1px solid rgba(239,68,68,.2); }
-        .badge-pending { background:rgba(245,158,11,.12); color:#fbbf24; border:1px solid rgba(245,158,11,.2); }
-        .badge-paid    { background:rgba(16,185,129,.15); color:#34d399; border:1px solid rgba(16,185,129,.2); }
-        .badge-cancelled { background:rgba(239,68,68,.12); color:#f87171; border:1px solid rgba(239,68,68,.2); }
+        .badge-active  { background:rgba(16,185,129,.15); color:var(--success-fg); border:1px solid rgba(16,185,129,.2); }
+        .badge-paused  { background:rgba(245,158,11,.12); color:var(--warning-fg); border:1px solid rgba(245,158,11,.2); }
+        .badge-closed  { background:rgba(239,68,68,.12);  color:var(--danger-fg); border:1px solid rgba(239,68,68,.2); }
+        .badge-pending { background:rgba(245,158,11,.12); color:var(--warning-fg); border:1px solid rgba(245,158,11,.2); }
+        .badge-paid    { background:rgba(16,185,129,.15); color:var(--success-fg); border:1px solid rgba(16,185,129,.2); }
+        .badge-cancelled { background:rgba(239,68,68,.12); color:var(--danger-fg); border:1px solid rgba(239,68,68,.2); }
 
         /* Alert flashes */
         .flash-alert {
@@ -375,12 +459,12 @@
         .flash-success {
             background: rgba(16,185,129,.1);
             border: 1px solid rgba(16,185,129,.2);
-            color: #34d399;
+            color: var(--success-fg);
         }
         .flash-danger {
             background: rgba(239,68,68,.1);
             border: 1px solid rgba(239,68,68,.2);
-            color: #f87171;
+            color: var(--danger-fg);
         }
 
         /* Filter panel */
@@ -394,6 +478,10 @@
 
         /* Tables */
         .dark-table {
+            --bs-table-bg: transparent;
+            --bs-table-color: var(--text-primary);
+            --bs-table-hover-bg: transparent;
+            --bs-table-striped-bg: transparent;
             color: var(--text-primary);
             width: 100%;
         }
@@ -411,18 +499,18 @@
         .dark-table tbody td {
             font-size: 13px;
             color: var(--text-dim);
-            border-bottom: 1px solid rgba(0,212,255,.05);
+            border-bottom: 1px solid var(--row-border);
             padding: 12px 16px;
             vertical-align: middle;
         }
         .dark-table tbody tr:hover td {
-            background: rgba(0,212,255,.03);
+            background: var(--hover-bg);
             color: var(--text-primary);
         }
 
         /* Form controls */
         .form-control, .form-select {
-            background: rgba(255,255,255,.05) !important;
+            background: var(--control-bg) !important;
             border: 1px solid var(--border-glow) !important;
             color: var(--text-primary) !important;
             border-radius: 10px !important;
@@ -430,8 +518,8 @@
         }
         .form-control:focus, .form-select:focus {
             border-color: var(--neon-blue) !important;
-            box-shadow: 0 0 0 3px rgba(0,212,255,.1) !important;
-            background: rgba(0,212,255,.05) !important;
+            box-shadow: 0 0 0 3px var(--active-bg) !important;
+            background: var(--control-focus-bg) !important;
         }
         .form-control::placeholder { color: var(--text-muted) !important; }
         .form-label {
@@ -442,7 +530,7 @@
             color: var(--text-muted);
             margin-bottom: 6px;
         }
-        .form-select option { background: #182844; color: var(--text-primary); }
+        .form-select option { background: var(--surface-raised); color: var(--text-primary); }
 
         /* Buttons */
         .btn-neon {
@@ -461,8 +549,14 @@
             box-shadow: 0 6px 24px rgba(0,212,255,.3);
             color: #fff;
         }
+        .btn-neon:disabled {
+            opacity: .45;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
         .btn-ghost {
-            background: rgba(255,255,255,.05);
+            background: var(--control-bg);
             border: 1px solid var(--border-glow);
             color: var(--text-dim);
             font-size: 13px;
@@ -471,14 +565,14 @@
             transition: all .2s;
         }
         .btn-ghost:hover {
-            background: rgba(0,212,255,.08);
-            border-color: rgba(0,212,255,.3);
-            color: #fff;
+            background: var(--active-bg);
+            border-color: var(--neon-blue);
+            color: var(--text-strong);
         }
 
         /* Pagination */
         .page-link {
-            background: rgba(255,255,255,.04);
+            background: var(--control-bg);
             border-color: var(--border-glow);
             color: var(--text-dim);
             border-radius: 8px !important;
@@ -486,8 +580,8 @@
             font-size: 13px;
             padding: 6px 12px;
         }
-        .page-link:hover { background: rgba(0,212,255,.1); color: #fff; border-color: var(--neon-blue); }
-        .page-item.active .page-link { background: var(--neon-blue); border-color: var(--neon-blue); color: #000; font-weight: 700; }
+        .page-link:hover { background: var(--active-bg); color: var(--text-strong); border-color: var(--neon-blue); }
+        .page-item.active .page-link { background: var(--neon-blue); border-color: var(--neon-blue); color: var(--pagination-active-fg); font-weight: 700; }
         .page-item.disabled .page-link { opacity: .3; }
 
         /* Rank badges */
@@ -504,7 +598,7 @@
         .rank-1 { background:linear-gradient(135deg,#78350f,#f59e0b); color:#fff; }
         .rank-2 { background:rgba(100,116,139,.2); color:#94a3b8; }
         .rank-3 { background:linear-gradient(135deg,#831843,#f472b6); color:#fff; }
-        .rank-other { background:rgba(255,255,255,.05); color:#475569; }
+        .rank-other { background:var(--overlay-soft); color:var(--text-faint); }
 
         /* Alert items (dashboard) */
         .alert-item {
@@ -516,8 +610,8 @@
             font-size: 13px;
             margin-bottom: 8px;
         }
-        .alert-warning { background:rgba(245,158,11,.1); border:1px solid rgba(245,158,11,.2); color:#fbbf24; }
-        .alert-info    { background:rgba(59,130,246,.08); border:1px solid rgba(59,130,246,.2); color:#93c5fd; }
+        .alert-warning { background:rgba(245,158,11,.1); border:1px solid rgba(245,158,11,.2); color:var(--warning-fg); }
+        .alert-info    { background:rgba(59,130,246,.08); border:1px solid rgba(59,130,246,.2); color:var(--info-fg); }
 
         /* Section headers inside glass-cards */
         .section-header {
@@ -530,7 +624,7 @@
         .section-header h6 {
             font-size: 13px;
             font-weight: 700;
-            color: #fff;
+            color: var(--text-strong);
             margin: 0;
             display: flex;
             align-items: center;
@@ -561,16 +655,24 @@
             align-items: center;
             gap: 16px;
             padding: 18px 24px;
-            border-bottom: 1px solid rgba(0,212,255,.06);
+            border-bottom: 1px solid var(--row-border);
             transition: background .15s;
         }
         .list-row:last-child { border-bottom: none; }
-        .list-row:hover { background: rgba(0,212,255,.03); }
+        .list-row:hover { background: var(--hover-bg); }
+
+        code.dark {
+            background: var(--active-bg);
+            color: var(--neon-blue);
+            padding: 2px 8px;
+            border-radius: 5px;
+            font-size: 11px;
+        }
 
         /* Scrollbar */
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(0,212,255,.15); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: var(--border-glow); border-radius: 4px; }
 
         /* Responsive */
         @media (max-width: 768px) {
@@ -591,7 +693,7 @@
         <div class="sidebar-brand-icon"><i class="bi bi-grid-3x3-gap-fill"></i></div>
         <div>
             <h5>Marketplace</h5>
-            <small>Mercado Libre Colombia</small>
+            <small>{{ $currentStore?->name ?? 'Mercado Libre Colombia' }}</small>
         </div>
     </div>
 
@@ -612,6 +714,29 @@
         </a>
         <a href="{{ route('customers.index') }}" class="nav-link {{ request()->routeIs('customers.*') ? 'active' : '' }}">
             <i class="bi bi-people"></i> Clientes
+        </a>
+
+        <div class="nav-section">Publicación</div>
+        @can('publish', \App\Models\Product::class)
+        <a href="{{ route('publisher.create') }}" class="nav-link {{ request()->routeIs('publisher.*') ? 'active' : '' }}">
+            <i class="bi bi-cloud-upload"></i> Publicador
+        </a>
+        @endcan
+        @can('view-settings')
+        <a href="{{ route('settings.edit') }}" class="nav-link {{ request()->routeIs('settings.*') ? 'active' : '' }}">
+            <i class="bi bi-sliders"></i> Configuración
+        </a>
+        @endcan
+
+        <div class="nav-section">Atención</div>
+        <a href="{{ route('questions.index') }}" class="nav-link {{ request()->routeIs('questions.*') ? 'active' : '' }}">
+            <i class="bi bi-question-circle"></i> Preguntas
+        </a>
+        <a href="{{ route('post-sale.index') }}" class="nav-link {{ request()->routeIs('post-sale.*') ? 'active' : '' }}">
+            <i class="bi bi-chat-dots"></i> Posventa
+        </a>
+        <a href="{{ route('notifications.index') }}" class="nav-link {{ request()->routeIs('notifications.*') ? 'active' : '' }}">
+            <i class="bi bi-bell"></i> Notificaciones
         </a>
 
         <div class="nav-section">Reportes</div>
@@ -671,6 +796,11 @@
         </a>
         @endif
 
+        @can('viewAny', \App\Models\User::class)
+        <a href="{{ route('users.index') }}" class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}">
+            <i class="bi bi-person-gear"></i> Usuarios
+        </a>
+        @endcan
         <a href="{{ route('accounts.index') }}" class="nav-link {{ request()->routeIs('accounts.*') ? 'active' : '' }}">
             <i class="bi bi-shop"></i> Mis Tiendas
         </a>
@@ -681,7 +811,7 @@
     <div class="sidebar-footer">
         <form method="POST" action="{{ route('logout') }}" class="m-0">
             @csrf
-            <button type="submit" class="nav-link w-100 text-start border-0 bg-transparent" style="color:#475569;">
+            <button type="submit" class="nav-link w-100 text-start border-0 bg-transparent" style="color:var(--text-faint);">
                 <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
             </button>
         </form>
@@ -696,7 +826,7 @@
     <div class="topbar">
         <div class="d-flex align-items-center gap-3">
             <button class="btn btn-sm d-md-none" id="sidebar-toggle"
-                    style="background:rgba(255,255,255,.06);border:1px solid var(--border-glow);color:var(--text-dim);">
+                    style="background:var(--control-bg);border:1px solid var(--border-glow);color:var(--text-dim);">
                 <i class="bi bi-list fs-5"></i>
             </button>
             <h1 class="page-title">@yield('page-title', 'Dashboard')</h1>
@@ -704,10 +834,14 @@
 
         <div class="topbar-right">
             @if(session('success'))
-                <span style="font-size:12px;background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.25);color:#34d399;padding:4px 12px;border-radius:20px;">
+                <span style="font-size:12px;background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.25);color:var(--success-fg);padding:4px 12px;border-radius:20px;">
                     <i class="bi bi-check-circle me-1"></i>{{ session('success') }}
                 </span>
             @endif
+
+            <button type="button" class="theme-toggle" id="theme-toggle" title="Cambiar tema" aria-label="Cambiar entre modo claro y oscuro">
+                <i class="bi bi-sun"></i>
+            </button>
 
             <div class="dropdown">
                 <button class="user-btn dropdown-toggle border-0" data-bs-toggle="dropdown">
@@ -725,7 +859,7 @@
                     <li>
                         <form method="POST" action="{{ route('logout') }}" class="m-0">
                             @csrf
-                            <button type="submit" class="dropdown-item" style="color:#f87171;">
+                            <button type="submit" class="dropdown-item" style="color:var(--danger-fg);">
                                 <i class="bi bi-box-arrow-right" style="font-size:13px;"></i>
                                 Cerrar sesión
                             </button>
@@ -769,6 +903,26 @@
     document.getElementById('sidebar-toggle')?.addEventListener('click', () => {
         document.getElementById('sidebar').classList.toggle('show');
     });
+
+    window.themeColor = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+    (function () {
+        const root   = document.documentElement;
+        const button = document.getElementById('theme-toggle');
+        const paintIcon = () => {
+            button.querySelector('i').className = root.dataset.theme === 'light' ? 'bi bi-moon-stars' : 'bi bi-sun';
+        };
+
+        paintIcon();
+        button.addEventListener('click', () => {
+            const next = root.dataset.theme === 'light' ? 'dark' : 'light';
+            root.setAttribute('data-theme', next);
+            root.setAttribute('data-bs-theme', next);
+            try { localStorage.setItem('theme', next); } catch (e) {}
+            paintIcon();
+            window.dispatchEvent(new CustomEvent('themechange', { detail: next }));
+        });
+    })();
 </script>
 @stack('scripts')
 </body>

@@ -26,7 +26,7 @@ class ProductController extends Controller
         $user       = auth()->user();
         $account    = $this->accountRepository->findSelectedByUser($user->id, session('active_meli_account_id'));
         $products   = $account
-            ? $this->productService->list($account, $request->only(['search', 'status', 'category_id', 'min_price', 'max_price']))
+            ? $this->productService->list($account, $request->only(['search', 'status', 'category_id', 'min_price', 'max_price', 'sku', 'published_on']))
             : new LengthAwarePaginator([], 0, 20);
         $categories = Category::orderBy('name')->get();
 

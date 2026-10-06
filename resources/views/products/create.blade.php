@@ -27,7 +27,7 @@
         border: 1px solid var(--border-glow);
         border-radius: 10px;
         overflow: hidden;
-        background: rgba(255,255,255,.04);
+        background:var(--overlay-soft);
     }
     .input-group-dark .prefix {
         padding: 11px 14px;
@@ -59,8 +59,8 @@
         border-color: var(--neon-blue);
         background: rgba(0,212,255,.06);
     }
-    .invalid-text { font-size: 12px; color: #f87171; margin-top: 5px; }
-    .form-control.is-invalid { border-color: #f87171 !important; }
+    .invalid-text { font-size: 12px; color:var(--danger-fg); margin-top: 5px; }
+    .form-control.is-invalid { border-color:var(--danger-fg) !important; }
 </style>
 @endpush
 
@@ -74,7 +74,7 @@
                 <i class="bi bi-arrow-left"></i>
             </a>
             <div>
-                <h5 style="color:#fff;font-weight:700;margin:0;">Crear y publicar producto</h5>
+                <h5 style="color:var(--text-strong);font-weight:700;margin:0;">Crear y publicar producto</h5>
                 <p style="font-size:12px;color:var(--text-muted);margin:0;">Se publicará automáticamente en Mercado Libre Colombia</p>
             </div>
         </div>
@@ -87,7 +87,7 @@
                 <div class="form-section-title"><i class="bi bi-info-circle"></i>Información básica</div>
 
                 <div class="mb-4">
-                    <label class="form-label">Título <span style="color:#f87171;">*</span></label>
+                    <label class="form-label">Título <span style="color:var(--danger-fg);">*</span></label>
                     <input type="text" name="title" class="form-control @error('title') is-invalid @enderror"
                         value="{{ old('title') }}" placeholder="Ej: Camiseta Nike Running Talla M">
                     @error('title')<div class="invalid-text">{{ $message }}</div>@enderror
@@ -102,7 +102,7 @@
 
                 <div class="row g-3">
                     <div class="col-md-4">
-                        <label class="form-label">Precio (COP) <span style="color:#f87171;">*</span></label>
+                        <label class="form-label">Precio (COP) <span style="color:var(--danger-fg);">*</span></label>
                         <div class="input-group-dark">
                             <span class="prefix">$</span>
                             <input type="number" name="price" step="0.01" min="0"
@@ -112,7 +112,7 @@
                         @error('price')<div class="invalid-text">{{ $message }}</div>@enderror
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label">Stock <span style="color:#f87171;">*</span></label>
+                        <label class="form-label">Stock <span style="color:var(--danger-fg);">*</span></label>
                         <input type="number" name="stock" min="0"
                             class="form-control @error('stock') is-invalid @enderror"
                             value="{{ old('stock', 0) }}">
@@ -134,7 +134,7 @@
 
                 <div class="row g-3">
                     <div class="col-md-4">
-                        <label class="form-label">Condición <span style="color:#f87171;">*</span></label>
+                        <label class="form-label">Condición <span style="color:var(--danger-fg);">*</span></label>
                         <select name="condition" class="form-select @error('condition') is-invalid @enderror">
                             <option value="new"  {{ old('condition', 'new') === 'new'  ? 'selected' : '' }}>Nuevo</option>
                             <option value="used" {{ old('condition') === 'used' ? 'selected' : '' }}>Usado</option>

@@ -13,7 +13,7 @@ class ReportController extends Controller
 
     public function sales(Request $request): JsonResponse
     {
-        $this->authorize('view', \App\Policies\ReportPolicy::class);
+        $this->authorize('view-report');
 
         $data = $this->reportService->getSalesByDateRange(
             auth()->id(),
@@ -31,7 +31,7 @@ class ReportController extends Controller
 
     public function topProducts(): JsonResponse
     {
-        $this->authorize('view', \App\Policies\ReportPolicy::class);
+        $this->authorize('view-report');
 
         $products = $this->reportService->getTopProducts(auth()->id());
 
@@ -45,7 +45,7 @@ class ReportController extends Controller
 
     public function topCustomers(): JsonResponse
     {
-        $this->authorize('view', \App\Policies\ReportPolicy::class);
+        $this->authorize('view-report');
 
         $customers = $this->reportService->getTopCustomers(auth()->id());
 
@@ -59,7 +59,7 @@ class ReportController extends Controller
 
     public function exportSales(Request $request)
     {
-        $this->authorize('export', \App\Policies\ReportPolicy::class);
+        $this->authorize('export-report');
 
         return $this->reportService->exportSales(
             auth()->id(),
@@ -70,14 +70,14 @@ class ReportController extends Controller
 
     public function exportProducts()
     {
-        $this->authorize('export', \App\Policies\ReportPolicy::class);
+        $this->authorize('export-report');
 
         return $this->reportService->exportProducts(auth()->id());
     }
 
     public function exportCustomers()
     {
-        $this->authorize('export', \App\Policies\ReportPolicy::class);
+        $this->authorize('export-report');
 
         return $this->reportService->exportCustomers(auth()->id());
     }

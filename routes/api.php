@@ -1,6 +1,16 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\BulkPublishController;
+use App\Http\Controllers\Api\CatalogController;
+use App\Http\Controllers\Api\MeliCategoryController;
+use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\PostSaleController;
+use App\Http\Controllers\Api\PricingController;
+use App\Http\Controllers\Api\ProductPublishingController;
+use App\Http\Controllers\Api\QuestionController;
+use App\Http\Controllers\Api\SettingController;
+use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\OrderController;
@@ -14,7 +24,7 @@ use Illuminate\Support\Facades\Route;
 | Auth Routes (públicas)
 |--------------------------------------------------------------------------
 */
-Route::prefix('auth')->group(function () {
+Route::prefix('auth')->middleware('tenant.code')->group(function () {
     Route::post('login',          [AuthController::class, 'login']);
     Route::post('register',       [AuthController::class, 'register']);
     Route::post('forgot-password',[AuthController::class, 'forgotPassword']);
@@ -26,7 +36,7 @@ Route::prefix('auth')->group(function () {
 | Rutas protegidas con JWT
 |--------------------------------------------------------------------------
 */
-Route::middleware('jwt.auth')->group(function () {
+Route::middleware('auth.jwt')->group(function () {
 
     Route::prefix('auth')->group(function () {
         Route::post('logout',  [AuthController::class, 'logout']);
@@ -34,6 +44,68 @@ Route::middleware('jwt.auth')->group(function () {
         Route::get('profile',  [AuthController::class, 'profile']);
         Route::put('profile',  [ProfileController::class, 'update']);
     });
+
+    /*
+    |----------------------------------------------------------------------
+    | Productos — publicación (migrado de Gestion / Inicio)
+    |----------------------------------------------------------------------
+    */
+    Route::get('products/summary', [ProductPublishingController::class, 'summary'])->name('api.products.summary');
+    Route::get('products/sku/{sku}', [ProductPublishingController::class, 'findBySku'])->name('api.products.by-sku');
+    Route::post('products/publish', [ProductPublishingController::class, 'publish'])->name('api.products.publish');
+    Route::post('products/{id}/pause', [ProductPublishingController::class, 'pause'])->whereNumber('id')->name('api.products.pause');
+    Route::post('products/{id}/activate', [ProductPublishingController::class, 'activate'])->whereNumber('id')->name('api.products.activate');
+    Route::patch('products/{id}/listing', [ProductPublishingController::class, 'updateListing'])->whereNumber('id')->name('api.products.listing');
+    Route::post('products/{id}/archive', [ProductPublishingController::class, 'archive'])->whereNumber('id')->name('api.products.archive');
+
+    Route::prefix('catalog')->group(function () {
+        Route::get('sku/{sku}', [CatalogController::class, 'lookupSku'])->name('api.catalog.sku');
+        Route::get('category/{categoryId}', [CatalogController::class, 'byCategory'])->name('api.catalog.category');
+        Route::get('search', [CatalogController::class, 'searchByTitle'])->name('api.catalog.search');
+    });
+
+    Route::get('bulk-publish/codes', [BulkPublishController::class, 'index'])->name('api.bulk-publish.index');
+    Route::post('bulk-publish/codes', [BulkPublishController::class, 'store'])->name('api.bulk-publish.store');
+
+    Route::prefix('meli/categories')->group(function () {
+        Route::get('/', [MeliCategoryController::class, 'index'])->name('api.meli.categories');
+        Route::get('predict', [MeliCategoryController::class, 'predict'])->name('api.meli.categories.predict');
+        Route::get('{categoryId}', [MeliCategoryController::class, 'show'])->name('api.meli.categories.show');
+    });
+
+    /*
+    |----------------------------------------------------------------------
+    | Configuración y precios (migrado de Configuraciones / Precio)
+    |----------------------------------------------------------------------
+    */
+    Route::get('settings', [SettingController::class, 'index'])->name('api.settings.index');
+    Route::put('settings', [SettingController::class, 'update'])->name('api.settings.update');
+    Route::get('settings/reputation', [SettingController::class, 'reputation'])->name('api.settings.reputation');
+    Route::get('settings/description-template', [SettingController::class, 'descriptionTemplate'])->name('api.settings.description-template');
+    Route::get('pricing/calculate', [PricingController::class, 'calculate'])->name('api.pricing.calculate');
+
+    /*
+    |----------------------------------------------------------------------
+    | Preguntas y posventa (migrado de Preguntas)
+    |----------------------------------------------------------------------
+    */
+    Route::get('questions', [QuestionController::class, 'index'])->name('api.questions.index');
+    Route::patch('questions/{id}/seen', [QuestionController::class, 'markSeen'])->whereNumber('id')->name('api.questions.seen');
+    Route::post('questions/{id}/answer', [QuestionController::class, 'answer'])->whereNumber('id')->name('api.questions.answer');
+    Route::get('post-sale/conversations', [PostSaleController::class, 'index'])->name('api.post-sale.index');
+    Route::post('post-sale/conversations/{orderId}/messages', [PostSaleController::class, 'reply'])->whereNumber('orderId')->name('api.post-sale.reply');
+
+    /*
+    |----------------------------------------------------------------------
+    | Notificaciones y usuarios (migrado de Gestion)
+    |----------------------------------------------------------------------
+    */
+    Route::get('notifications', [NotificationController::class, 'index'])->name('api.notifications.index');
+    Route::patch('notifications/{id}/read', [NotificationController::class, 'markAsRead'])->whereNumber('id')->name('api.notifications.read');
+
+    Route::get('users', [UserController::class, 'index'])->name('api.users.index');
+    Route::post('users', [UserController::class, 'store'])->name('api.users.store');
+    Route::put('users/{id}', [UserController::class, 'update'])->whereNumber('id')->name('api.users.update');
 
     /*
     |----------------------------------------------------------------------
@@ -71,6 +143,8 @@ Route::middleware('jwt.auth')->group(function () {
         'show'  => 'api.orders.show',
     ]);
     Route::post('orders/sync', [OrderController::class, 'sync'])->name('api.orders.sync');
+    Route::put('orders/{id}/final-price', [OrderController::class, 'updateFinalPrice'])->whereNumber('id')->name('api.orders.final-price');
+    Route::get('orders/{id}/shipping-label', [OrderController::class, 'shippingLabel'])->whereNumber('id')->name('api.orders.shipping-label');
 
     /*
     |----------------------------------------------------------------------

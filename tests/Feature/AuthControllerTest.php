@@ -12,6 +12,7 @@ class AuthControllerTest extends TestCase
         $user = User::factory()->create(['password' => bcrypt('secret123')]);
 
         $response = $this->postJson('/api/auth/login', [
+            'connection_code' => 'TEST-CODE',
             'email'    => $user->email,
             'password' => 'secret123',
         ]);
@@ -28,6 +29,7 @@ class AuthControllerTest extends TestCase
         $user = User::factory()->create(['password' => bcrypt('secret123')]);
 
         $response = $this->postJson('/api/auth/login', [
+            'connection_code' => 'TEST-CODE',
             'email'    => $user->email,
             'password' => 'wrong-password',
         ]);
@@ -38,7 +40,7 @@ class AuthControllerTest extends TestCase
 
     public function test_login_validation_requires_email_and_password(): void
     {
-        $response = $this->postJson('/api/auth/login', []);
+        $response = $this->postJson('/api/auth/login', ['connection_code' => 'TEST-CODE']);
 
         $response->assertUnprocessable();
     }
@@ -46,6 +48,7 @@ class AuthControllerTest extends TestCase
     public function test_register_creates_user_with_operator_role(): void
     {
         $response = $this->postJson('/api/auth/register', [
+            'connection_code'       => 'TEST-CODE',
             'name'                  => 'Nuevo Usuario',
             'email'                 => 'nuevo@test.com',
             'password'              => 'password123',

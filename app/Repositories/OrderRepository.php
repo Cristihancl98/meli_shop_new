@@ -69,6 +69,20 @@ class OrderRepository implements OrderRepositoryInterface
             ->get();
     }
 
+    public function findForAccount(int $accountId, int $id): ?Order
+    {
+        return Order::with(['customer', 'items'])
+            ->where('mercadolibre_account_id', $accountId)
+            ->find($id);
+    }
+
+    public function findByConversation(int $accountId, string $packOrOrderId): ?Order
+    {
+        return Order::where('mercadolibre_account_id', $accountId)
+            ->where(fn ($q) => $q->where('pack_id', $packOrOrderId)->orWhere('meli_order_id', $packOrOrderId))
+            ->first();
+    }
+
     public function create(array $data): Order
     {
         return Order::create($data);

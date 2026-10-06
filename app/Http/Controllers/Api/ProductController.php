@@ -29,7 +29,7 @@ class ProductController extends Controller
         }
 
         $products = $this->productService->list($account, $request->only([
-            'search', 'status', 'category_id', 'min_price', 'max_price',
+            'search', 'status', 'category_id', 'min_price', 'max_price', 'sku', 'published_on',
         ]));
 
         return response()->json([
@@ -53,6 +53,8 @@ class ProductController extends Controller
 
     public function store(StoreProductRequest $request): JsonResponse
     {
+        $this->authorize('create', \App\Models\Product::class);
+
         $user    = JWTAuth::parseToken()->authenticate();
         $account = $this->accountRepository->findActiveByUserId($user->id);
 
@@ -79,6 +81,8 @@ class ProductController extends Controller
             return response()->json(['success' => false, 'message' => 'Producto no encontrado.', 'data' => null, 'errors' => []], 404);
         }
 
+        $this->authorize('update', $product);
+
         $imagePath = $request->hasFile('image')
             ? $request->file('image')->getPathname()
             : null;
@@ -98,6 +102,8 @@ class ProductController extends Controller
             return response()->json(['success' => false, 'message' => 'Producto no encontrado.', 'data' => null, 'errors' => []], 404);
         }
 
+        $this->authorize('delete', $product);
+
         $this->productService->delete($account, $product);
 
         return response()->json(['success' => true, 'message' => 'Producto eliminado.', 'data' => null, 'errors' => []]);
@@ -112,6 +118,8 @@ class ProductController extends Controller
         if (!$product || !$product->meli_item_id) {
             return response()->json(['success' => false, 'message' => 'Producto no encontrado o sin ID de MeLi.', 'data' => null, 'errors' => []], 404);
         }
+
+        $this->authorize('sync', $product);
 
         $synced = $this->productService->syncFromMeli($account, $product);
 

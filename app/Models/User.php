@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\TenantManager;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -39,7 +40,7 @@ class User extends Authenticatable implements JWTSubject
 
     public function getJWTCustomClaims(): array
     {
-        return [];
+        return [config('tenancy.jwt_claim') => app(TenantManager::class)->current()?->id];
     }
 
     public function roles(): BelongsToMany
@@ -50,6 +51,16 @@ class User extends Authenticatable implements JWTSubject
     public function mercadolibreAccounts(): HasMany
     {
         return $this->hasMany(MercadolibreAccount::class);
+    }
+
+    public function syncRole(string $role): void
+    {
+        $this->roles()->sync(Role::where('name', $role)->pluck('id'));
+    }
+
+    public function roleName(): ?string
+    {
+        return $this->roles()->value('name');
     }
 
     public function hasRole(string $role): bool

@@ -132,7 +132,7 @@
                     @foreach($orders as $order)
                     <tr>
                         <td style="padding-left:24px;">
-                            <span style="font-weight:700;color:#fff;">#{{ $order->id }}</span>
+                            <span style="font-weight:700;color:var(--text-strong);">#{{ $order->id }}</span>
                             @if($order->meli_order_id)
                             <br><small style="font-size:10px;color:var(--text-muted);">{{ $order->meli_order_id }}</small>
                             @endif
@@ -150,7 +150,7 @@
                             </span>
                         </td>
                         <td>
-                            <span style="font-weight:700;color:#fff;">${{ number_format($order->total_amount, 0, ',', '.') }}</span>
+                            <span style="font-weight:700;color:var(--text-strong);">${{ number_format($order->total_amount, 0, ',', '.') }}</span>
                         </td>
                         <td>
                             @php

@@ -2,12 +2,18 @@
 
 namespace App\Models;
 
+use App\Observers\MercadolibreAccountObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+#[ObservedBy(MercadolibreAccountObserver::class)]
 class MercadolibreAccount extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'user_id',
         'meli_user_id',
@@ -54,6 +60,16 @@ class MercadolibreAccount extends Model
     public function salesStatistics(): HasMany
     {
         return $this->hasMany(SalesStatistic::class);
+    }
+
+    public function settings(): HasMany
+    {
+        return $this->hasMany(AccountSetting::class);
+    }
+
+    public function questions(): HasMany
+    {
+        return $this->hasMany(Question::class);
     }
 
     public function isTokenExpired(): bool

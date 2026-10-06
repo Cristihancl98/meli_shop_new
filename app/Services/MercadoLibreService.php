@@ -61,6 +61,11 @@ class MercadoLibreService
         return $response->json();
     }
 
+    public function refreshIfExpiring(MercadolibreAccount $account): MercadolibreAccount
+    {
+        return $this->ensureFreshToken($account);
+    }
+
     public function refreshAccessToken(MercadolibreAccount $account): MercadolibreAccount
     {
         $response = Http::post(config('services.mercadolibre.token_url'), [
@@ -176,6 +181,156 @@ class MercadoLibreService
         $response = $this->request($account, 'GET', "/users/{$customerId}");
 
         return $response->json();
+    }
+
+    public function getSeller(MercadolibreAccount $account): array
+    {
+        return $this->request($account, 'GET', "/users/{$account->meli_user_id}")->json() ?? [];
+    }
+
+    // -----------------------------------------------------------------------
+    // Publicaciones (complementos)
+    // -----------------------------------------------------------------------
+
+    public function scanItems(MercadolibreAccount $account, ?string $scrollId = null): array
+    {
+        $query = ['search_type' => 'scan', 'limit' => 50];
+
+        if ($scrollId) {
+            $query['scroll_id'] = $scrollId;
+        }
+
+        return $this->request($account, 'GET', "/users/{$account->meli_user_id}/items/search", $query)->json() ?? [];
+    }
+
+    public function getItems(MercadolibreAccount $account, array $itemIds): array
+    {
+        if ($itemIds === []) {
+            return [];
+        }
+
+        return $this->request($account, 'GET', '/items', ['ids' => implode(',', $itemIds)])->json() ?? [];
+    }
+
+    public function createItemDescription(MercadolibreAccount $account, string $itemId, string $text): array
+    {
+        return $this->request($account, 'POST', "/items/{$itemId}/description", [], ['plain_text' => $text])->json() ?? [];
+    }
+
+    public function updateItemDescription(MercadolibreAccount $account, string $itemId, string $text): array
+    {
+        return $this->request($account, 'PUT', "/items/{$itemId}/description?api_version=2", [], ['plain_text' => $text])->json() ?? [];
+    }
+
+    public function changeItemStatus(MercadolibreAccount $account, string $itemId, string $status): array
+    {
+        return $this->updateProduct($account, $itemId, ['status' => $status]);
+    }
+
+    // -----------------------------------------------------------------------
+    // Categorías
+    // -----------------------------------------------------------------------
+
+    public function getSiteCategories(MercadolibreAccount $account): array
+    {
+        $site = config('services.mercadolibre.country_code');
+
+        return $this->request($account, 'GET', "/sites/{$site}/categories")->json() ?? [];
+    }
+
+    public function getCategory(MercadolibreAccount $account, string $categoryId): array
+    {
+        return $this->request($account, 'GET', "/categories/{$categoryId}")->json() ?? [];
+    }
+
+    public function predictCategory(MercadolibreAccount $account, string $title): array
+    {
+        $site = config('services.mercadolibre.country_code');
+
+        return $this->request($account, 'GET', "/sites/{$site}/domain_discovery/search", [
+            'q'     => $title,
+            'limit' => 1,
+        ])->json() ?? [];
+    }
+
+    // -----------------------------------------------------------------------
+    // Envíos
+    // -----------------------------------------------------------------------
+
+    public function getShippingLabel(MercadolibreAccount $account, string $shipmentId): Response
+    {
+        return $this->request($account, 'GET', '/shipment_labels', [
+            'shipment_ids' => $shipmentId,
+            'savePdf'      => 'Y',
+        ]);
+    }
+
+    // -----------------------------------------------------------------------
+    // Preguntas preventa
+    // -----------------------------------------------------------------------
+
+    public function searchSellerQuestions(MercadolibreAccount $account, int $limit = 20): array
+    {
+        return $this->request($account, 'GET', '/questions/search', [
+            'seller_id'   => $account->meli_user_id,
+            'api_version' => 4,
+            'sort_fields' => 'date_created',
+            'sort_types'  => 'DESC',
+            'limit'       => $limit,
+        ])->json() ?? [];
+    }
+
+    public function getQuestion(MercadolibreAccount $account, string $questionId): array
+    {
+        return $this->request($account, 'GET', "/questions/{$questionId}", ['api_version' => 4])->json() ?? [];
+    }
+
+    public function answerQuestion(MercadolibreAccount $account, string $questionId, string $text): array
+    {
+        return $this->request($account, 'POST', '/answers', [], [
+            'question_id' => $questionId,
+            'text'        => $text,
+        ])->json() ?? [];
+    }
+
+    // -----------------------------------------------------------------------
+    // Mensajería posventa
+    // -----------------------------------------------------------------------
+
+    public function sendPostSaleMessage(MercadolibreAccount $account, string $packId, string $buyerId, string $text): array
+    {
+        return $this->request(
+            $account,
+            'POST',
+            "/messages/packs/{$packId}/sellers/{$account->meli_user_id}?tag=post_sale",
+            [],
+            [
+                'from' => ['user_id' => $account->meli_user_id],
+                'to'   => ['user_id' => $buyerId],
+                'text' => $text,
+            ]
+        )->json() ?? [];
+    }
+
+    public function getPackMessages(MercadolibreAccount $account, string $packId): array
+    {
+        return $this->request($account, 'GET', "/messages/packs/{$packId}/sellers/{$account->meli_user_id}", [
+            'tag'          => 'post_sale',
+            'mark_as_read' => 'false',
+        ])->json() ?? [];
+    }
+
+    public function getUnreadPostSaleMessages(MercadolibreAccount $account): array
+    {
+        return $this->request($account, 'GET', '/messages/unread', [
+            'role' => 'seller',
+            'tag'  => 'post_sale',
+        ])->json() ?? [];
+    }
+
+    public function getMessage(MercadolibreAccount $account, string $messageId): array
+    {
+        return $this->request($account, 'GET', "/messages/{$messageId}", ['tag' => 'post_sale'])->json() ?? [];
     }
 
     // -----------------------------------------------------------------------

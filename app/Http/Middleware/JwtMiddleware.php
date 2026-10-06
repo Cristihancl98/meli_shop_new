@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\TenantManager;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -12,6 +13,8 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 
 class JwtMiddleware
 {
+    public function __construct(private readonly TenantManager $tenantManager) {}
+
     public function handle(Request $request, Closure $next): Response
     {
         $isApi = $request->expectsJson() || str_starts_with($request->path(), 'api/');
@@ -28,7 +31,13 @@ class JwtMiddleware
         }
 
         try {
-            JWTAuth::parseToken()->authenticate();
+            $storeId = JWTAuth::parseToken()->getPayload()->get(config('tenancy.jwt_claim'));
+
+            if (!$this->tenantManager->activateById($storeId ? (int) $storeId : null)) {
+                throw new TokenInvalidException('Token sin tienda válida.');
+            }
+
+            JWTAuth::authenticate();
         } catch (TokenExpiredException) {
             \Illuminate\Support\Facades\Log::info('JwtMiddleware: TokenExpiredException, isApi=' . ($isApi ? 'true' : 'false'));
             if ($isApi) {

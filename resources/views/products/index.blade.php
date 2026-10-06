@@ -133,7 +133,7 @@
                             @if($product->meli_item_id)
                                 <form method="POST" action="{{ route('products.sync', $product) }}" class="flex-fill">
                                     @csrf
-                                    <button type="submit" class="btn-ghost w-100" style="padding:7px;font-size:13px;color:#34d399;" title="Sincronizar">
+                                    <button type="submit" class="btn-ghost w-100" style="padding:7px;font-size:13px;color:var(--success-fg);" title="Sincronizar">
                                         <i class="bi bi-arrow-repeat"></i>
                                     </button>
                                 </form>

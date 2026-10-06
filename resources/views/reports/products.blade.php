@@ -8,7 +8,7 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <p style="font-size:13px;color:var(--text-muted);margin:0;">Top 20 productos ordenados por unidades vendidas</p>
     @can('export-report')
-    <a href="{{ route('reports.export.products') }}" class="btn-ghost" style="color:#34d399;border-color:rgba(52,211,153,.3);">
+    <a href="{{ route('reports.export.products') }}" class="btn-ghost" style="color:var(--success-fg);border-color:rgba(52,211,153,.3);">
         <i class="bi bi-file-earmark-excel me-1"></i>Exportar Excel
     </a>
     @endcan
@@ -47,7 +47,7 @@
                         <div class="d-flex align-items-center gap-3">
                             <img src="{{ $product->thumbnail ?: 'https://placehold.co/40x40/182844/6b82a0?text=?' }}"
                                  alt="{{ $product->title }}"
-                                 style="width:40px;height:40px;object-fit:contain;border-radius:8px;border:1px solid var(--border-card);background:rgba(255,255,255,.03);"
+                                 style="width:40px;height:40px;object-fit:contain;border-radius:8px;border:1px solid var(--border-card);background:var(--overlay-soft);"
                                  onerror="this.src='https://placehold.co/40x40/182844/6b82a0?text=?'">
                             <div>
                                 <div style="font-weight:600;color:var(--text-primary);max-width:240px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
@@ -62,12 +62,12 @@
                     <td style="font-size:12px;color:var(--text-muted);">{{ $product->category?->name ?? '—' }}</td>
                     <td class="text-end" style="font-weight:600;color:var(--text-primary);">${{ number_format($product->price, 0, ',', '.') }}</td>
                     <td class="text-center">
-                        <span style="{{ $product->stock <= 5 ? 'color:#f87171;font-weight:700;' : 'color:var(--text-dim);' }}">{{ $product->stock }}</span>
+                        <span style="{{ $product->stock <= 5 ? 'color:var(--danger-fg);font-weight:700;' : 'color:var(--text-dim);' }}">{{ $product->stock }}</span>
                     </td>
                     <td class="text-center">
                         <span style="font-weight:800;font-size:15px;color:var(--neon-blue);">{{ number_format($product->statistics?->quantity_sold ?? 0) }}</span>
                     </td>
-                    <td class="text-end" style="font-weight:700;color:#34d399;">
+                    <td class="text-end" style="font-weight:700;color:var(--success-fg);">
                         ${{ number_format($product->statistics?->total_revenue ?? 0, 0, ',', '.') }}
                     </td>
                     <td>

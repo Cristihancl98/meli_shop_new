@@ -2,19 +2,17 @@
 
 namespace App\Jobs;
 
-use App\Events\OrderSynced;
+use App\Enums\SettingKey;
 use App\Events\SyncFailed;
-use App\Models\Customer;
 use App\Models\MercadolibreAccount;
-use App\Models\Order;
-use App\Models\OrderItem;
-use App\Models\Product;
 use App\Models\SyncLog;
+use App\Services\SettingService;
 use App\Services\MercadoLibreService;
+use App\Services\OrderImportService;
+use App\Services\PostSaleService;
 use Carbon\Carbon;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class SyncOrdersJob implements ShouldQueue
@@ -29,8 +27,12 @@ class SyncOrdersJob implements ShouldQueue
         public readonly ?string $dateFrom = null,
     ) {}
 
-    public function handle(MercadoLibreService $meliService): void
-    {
+    public function handle(
+        MercadoLibreService $meliService,
+        OrderImportService $orderImportService,
+        PostSaleService $postSaleService,
+        SettingService $settingService
+    ): void {
         $log = SyncLog::create([
             'mercadolibre_account_id' => $this->account->id,
             'type'                    => 'orders',
@@ -39,40 +41,32 @@ class SyncOrdersJob implements ShouldQueue
         ]);
 
         $processed = 0;
+        $startedAt = now();
 
         try {
-            $from   = $this->dateFrom ?? Carbon::now()->subHours(24)->toIso8601String();
+            $from   = $this->resolveDateFrom($settingService);
             $offset = 0;
             $limit  = 50;
 
             do {
                 $response = $meliService->getOrders($this->account, [
-                    'sort'               => 'date_desc',
-                    'date_created.from'  => $from,
-                    'offset'             => $offset,
-                    'limit'              => $limit,
+                    'sort'                    => 'date_desc',
+                    'order.date_created.from' => $from,
+                    'offset'                  => $offset,
+                    'limit'                   => $limit,
                 ]);
 
                 $meliOrders = $response['results'] ?? [];
 
                 foreach ($meliOrders as $meliOrder) {
                     try {
-                        DB::transaction(function () use ($meliOrder, &$processed) {
-                            $customerId = $this->ensureCustomer($meliOrder);
-                            $orderData  = $this->mapOrderToLocal($meliOrder, $customerId);
+                        $order = $orderImportService->import($this->account, $meliOrder);
 
-                            $order = Order::updateOrCreate(
-                                ['meli_order_id' => $orderData['meli_order_id']],
-                                $orderData
-                            );
+                        if ($order->wasRecentlyCreated) {
+                            $postSaleService->sendSaleMessage($this->account, $order);
+                        }
 
-                            if ($order->wasRecentlyCreated) {
-                                $this->syncOrderItems($order, $meliOrder['order_items'] ?? []);
-                            }
-
-                            OrderSynced::dispatch($order->fresh(['items']));
-                            $processed++;
-                        });
+                        $processed++;
                     } catch (\Throwable $e) {
                         Log::warning("SyncOrdersJob: error on order {$meliOrder['id']}", ['error' => $e->getMessage()]);
                     }
@@ -82,6 +76,8 @@ class SyncOrdersJob implements ShouldQueue
                 $total   = $response['paging']['total'] ?? 0;
 
             } while ($offset < $total && count($meliOrders) > 0);
+
+            $settingService->recordSystemValue(SettingKey::OrdersSyncedAt, $startedAt->toDateTimeString(), $this->account);
 
             $log->update([
                 'status'      => 'success',
@@ -95,57 +91,14 @@ class SyncOrdersJob implements ShouldQueue
         }
     }
 
-    private function ensureCustomer(array $meliOrder): ?int
+    private function resolveDateFrom(SettingService $settingService): string
     {
-        $buyer = $meliOrder['buyer'] ?? null;
-        if (!$buyer) {
-            return null;
+        if ($this->dateFrom) {
+            return $this->dateFrom;
         }
 
-        $name = trim(($buyer['first_name'] ?? '') . ' ' . ($buyer['last_name'] ?? ''));
+        $lastSync = $settingService->get(SettingKey::OrdersSyncedAt, $this->account);
 
-        $customer = Customer::firstOrCreate(
-            ['meli_customer_id' => (string) $buyer['id']],
-            [
-                'mercadolibre_account_id' => $this->account->id,
-                'name'                    => $name ?: ($buyer['nickname'] ?? 'Sin nombre'),
-                'nickname'                => $buyer['nickname'] ?? null,
-                'email'                   => $buyer['email'] ?? null,
-            ]
-        );
-
-        return $customer->id;
-    }
-
-    private function mapOrderToLocal(array $data, ?int $customerId): array
-    {
-        return [
-            'meli_order_id'           => (string) $data['id'],
-            'mercadolibre_account_id' => $this->account->id,
-            'customer_id'             => $customerId,
-            'status'                  => $data['status'] ?? 'pending',
-            'payment_status'          => $data['payments'][0]['status'] ?? 'pending',
-            'shipping_status'         => $data['shipping']['status'] ?? null,
-            'total_amount'            => (float) ($data['total_amount'] ?? 0),
-            'order_date'              => $data['date_created'] ? Carbon::parse($data['date_created']) : now(),
-        ];
-    }
-
-    private function syncOrderItems(Order $order, array $items): void
-    {
-        foreach ($items as $item) {
-            $meliItemId = $item['item']['id'] ?? null;
-            $product    = $meliItemId ? Product::where('meli_item_id', $meliItemId)->first() : null;
-
-            OrderItem::create([
-                'order_id'     => $order->id,
-                'product_id'   => $product?->id,
-                'meli_item_id' => $meliItemId,
-                'title'        => $item['item']['title'] ?? '',
-                'quantity'     => (int) ($item['quantity'] ?? 1),
-                'unit_price'   => (float) ($item['unit_price'] ?? 0),
-                'total_price'  => (float) (($item['quantity'] ?? 1) * ($item['unit_price'] ?? 0)),
-            ]);
-        }
+        return ($lastSync ? Carbon::parse($lastSync)->startOfDay() : Carbon::now()->subDay())->toIso8601String();
     }
 }

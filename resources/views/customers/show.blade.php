@@ -15,7 +15,7 @@
     }
     .stat-row:last-child { border-bottom: none; }
     .stat-row .lbl { color: var(--text-muted); }
-    .stat-row .val { font-weight: 700; color: #fff; }
+    .stat-row .val { font-weight: 700; color:var(--text-strong); }
     code.dark { background: rgba(0,212,255,.1); color: var(--neon-blue); padding: 2px 8px; border-radius: 5px; font-size: 11px; }
     .side-title {
         font-size: 10px;
@@ -44,11 +44,11 @@
         {{-- Tarjeta perfil --}}
         <div class="glass-card p-4 mb-4 text-center">
             <div style="width:76px;height:76px;border-radius:50%;background:linear-gradient(135deg,var(--neon-purple),var(--neon-blue));display:flex;align-items:center;justify-content:center;margin:0 auto 16px;box-shadow:0 0 24px rgba(124,58,237,.3);">
-                <span style="color:#fff;font-size:30px;font-weight:700;">
+                <span style="color:var(--text-strong);font-size:30px;font-weight:700;">
                     {{ strtoupper(substr($customer->name ?: $customer->nickname, 0, 1)) }}
                 </span>
             </div>
-            <h5 style="color:#fff;font-weight:700;margin-bottom:4px;">{{ $customer->name ?: $customer->nickname }}</h5>
+            <h5 style="color:var(--text-strong);font-weight:700;margin-bottom:4px;">{{ $customer->name ?: $customer->nickname }}</h5>
             @if($customer->nickname && $customer->name)
             <p style="color:var(--text-muted);font-size:13px;margin-bottom:8px;">@{{ $customer->nickname }}</p>
             @endif
@@ -129,7 +129,7 @@
             <div class="list-row">
                 <div class="flex-fill">
                     <div class="d-flex align-items-center gap-2 mb-1">
-                        <span style="font-weight:700;font-size:14px;color:#fff;">Orden #{{ $order->id }}</span>
+                        <span style="font-weight:700;font-size:14px;color:var(--text-strong);">Orden #{{ $order->id }}</span>
                         <span class="badge {{ $s['class'] }}" style="font-size:10px;padding:3px 8px;">{{ $s['label'] }}</span>
                     </div>
                     <div style="font-size:12px;color:var(--text-muted);">

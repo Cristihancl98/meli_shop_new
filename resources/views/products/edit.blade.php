@@ -27,7 +27,7 @@
         border: 1px solid var(--border-glow);
         border-radius: 10px;
         overflow: hidden;
-        background: rgba(255,255,255,.04);
+        background:var(--overlay-soft);
     }
     .input-group-dark .prefix {
         padding: 11px 14px;
@@ -44,14 +44,14 @@
         background: transparent !important;
     }
     .input-group-dark .form-control:focus { box-shadow: none !important; }
-    .invalid-text { font-size: 12px; color: #f87171; margin-top: 5px; }
+    .invalid-text { font-size: 12px; color:var(--danger-fg); margin-top: 5px; }
     .meli-info-box {
         background: rgba(0,212,255,.06);
         border: 1px solid rgba(0,212,255,.2);
         border-radius: 10px;
         padding: 12px 16px;
         font-size: 13px;
-        color: #93c5fd;
+        color:var(--info-fg);
         display: flex;
         align-items: center;
         gap: 10px;
@@ -59,7 +59,7 @@
     .btn-danger-ghost {
         background: rgba(239,68,68,.08);
         border: 1px solid rgba(239,68,68,.2);
-        color: #f87171;
+        color:var(--danger-fg);
         font-size: 13px;
         border-radius: 10px;
         padding: 9px 18px;
@@ -80,7 +80,7 @@
                 <i class="bi bi-arrow-left"></i>
             </a>
             <div>
-                <h5 style="color:#fff;font-weight:700;margin:0;">Editar producto</h5>
+                <h5 style="color:var(--text-strong);font-weight:700;margin:0;">Editar producto</h5>
                 @if($product->meli_item_id)
                     <p style="font-size:12px;color:var(--text-muted);margin:0;">
                         MeLi ID: <code style="color:var(--neon-blue);font-size:11px;">{{ $product->meli_item_id }}</code>
@@ -139,9 +139,9 @@
 
                 @if($product->thumbnail)
                 <div class="d-flex align-items-center gap-3 mb-3 p-3"
-                     style="background:rgba(255,255,255,.03);border:1px solid var(--border-glow);border-radius:10px;">
+                     style="background:var(--overlay-soft);border:1px solid var(--border-glow);border-radius:10px;">
                     <img src="{{ $product->thumbnail }}" alt="Actual"
-                        style="height:72px;border-radius:8px;object-fit:contain;background:rgba(255,255,255,.03);padding:4px;">
+                        style="height:72px;border-radius:8px;object-fit:contain;background:var(--overlay-soft);padding:4px;">
                     <div>
                         <p style="font-size:12px;color:var(--text-dim);margin:0;">Imagen actual</p>
                         <p style="font-size:11px;color:var(--text-muted);margin:2px 0 0;">Sube una nueva para reemplazarla</p>

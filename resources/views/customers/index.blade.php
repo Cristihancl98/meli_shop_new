@@ -94,7 +94,7 @@
                         <td style="padding-left:24px;">
                             <div class="d-flex align-items-center gap-3">
                                 <div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--neon-purple),var(--neon-blue));display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                                    <span style="color:#fff;font-size:13px;font-weight:700;">
+                                    <span style="color:var(--text-strong);font-size:13px;font-weight:700;">
                                         {{ strtoupper(substr($customer->name ?: $customer->nickname, 0, 1)) }}
                                     </span>
                                 </div>
@@ -123,7 +123,7 @@
                             </span>
                         </td>
                         <td class="text-end">
-                            <span style="font-weight:700;color:#fff;">${{ number_format($customer->orders_sum_total_amount ?? 0, 0, ',', '.') }}</span>
+                            <span style="font-weight:700;color:var(--text-strong);">${{ number_format($customer->orders_sum_total_amount ?? 0, 0, ',', '.') }}</span>
                         </td>
                         <td style="font-size:12px;color:var(--text-muted);">
                             {{ $customer->created_at->format('d/m/Y') }}

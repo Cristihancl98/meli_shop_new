@@ -4,41 +4,19 @@ namespace App\Console\Commands;
 
 use App\Jobs\SyncOrdersJob;
 use App\Models\MercadolibreAccount;
-use Carbon\Carbon;
-use Illuminate\Console\Command;
 
-class SyncOrdersCommand extends Command
+class SyncOrdersCommand extends AccountJobCommand
 {
-    protected $signature   = 'sync:orders {--account= : ID de cuenta específica} {--from= : Fecha inicio ISO8601}';
-    protected $description = 'Sincroniza órdenes desde Mercado Libre para todas las cuentas activas';
+    protected $signature   = 'sync:orders {--store= : ID de tienda específica} {--account= : ID de cuenta específica} {--from= : Fecha inicio ISO8601}';
+    protected $description = 'Sincroniza órdenes desde Mercado Libre en todas las tiendas';
 
-    public function handle(): int
+    protected function dispatchFor(MercadolibreAccount $account): void
     {
-        $accounts = $this->getAccounts();
-
-        if ($accounts->isEmpty()) {
-            $this->warn('No hay cuentas de Mercado Libre activas.');
-            return self::SUCCESS;
-        }
-
-        $dateFrom = $this->option('from') ?? Carbon::now()->subHours(24)->toIso8601String();
-
-        foreach ($accounts as $account) {
-            SyncOrdersJob::dispatch($account, $dateFrom);
-            $this->info("Sincronización de órdenes encolada para cuenta: {$account->meli_user_id}");
-        }
-
-        return self::SUCCESS;
+        SyncOrdersJob::dispatch($account, $this->option('from'));
     }
 
-    private function getAccounts()
+    protected function label(): string
     {
-        $query = MercadolibreAccount::query();
-
-        if ($accountId = $this->option('account')) {
-            $query->where('id', $accountId);
-        }
-
-        return $query->get();
+        return 'Sincronización de órdenes';
     }
 }

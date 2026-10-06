@@ -5,9 +5,11 @@ ARG GID=1000
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         git unzip libzip-dev libpng-dev libjpeg62-turbo-dev libfreetype6-dev \
-        libicu-dev libonig-dev default-mysql-client \
+        libicu-dev libonig-dev libssl-dev default-mysql-client \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) pdo_mysql mbstring zip gd bcmath intl pcntl opcache \
+    && pecl install mongodb \
+    && docker-php-ext-enable mongodb \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
@@ -17,7 +19,8 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 
 RUN groupmod -o -g ${GID} www-data && usermod -o -u ${UID} -g www-data www-data
 
-ENV COMPOSER_HOME=/tmp/composer
+ENV COMPOSER_HOME=/tmp/composer \
+    XDG_CONFIG_HOME=/tmp/.config
 
 WORKDIR /var/www/html
 USER www-data

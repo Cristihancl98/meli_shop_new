@@ -6,7 +6,7 @@
 @push('styles')
 <style>
     .account-card {
-        background: rgba(255,255,255,.03);
+        background:var(--overlay-soft);
         border: 1px solid var(--border-card);
         border-radius: 14px;
         padding: 18px 20px;
@@ -33,10 +33,10 @@
     .account-avatar.active-av {
         background: linear-gradient(135deg, var(--neon-purple), var(--neon-blue));
         box-shadow: 0 4px 16px rgba(0,212,255,.3);
-        color: #fff;
+        color:var(--text-strong);
     }
     .account-avatar.inactive-av {
-        background: rgba(255,255,255,.06);
+        background:var(--overlay-soft);
         color: var(--text-muted);
     }
     .active-badge {
@@ -61,7 +61,7 @@
     }
     .token-expired {
         font-size: 10px;
-        color: #f87171;
+        color:var(--danger-fg);
         background: rgba(239,68,68,.1);
         border: 1px solid rgba(239,68,68,.2);
         padding: 2px 8px;
@@ -80,7 +80,7 @@
     .btn-danger-ghost {
         background: rgba(239,68,68,.08);
         border: 1px solid rgba(239,68,68,.2);
-        color: #f87171;
+        color:var(--danger-fg);
         font-size: 12px;
         border-radius: 8px;
         padding: 7px 14px;
@@ -124,7 +124,7 @@
 
                             <div class="flex-fill">
                                 <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
-                                    <span style="font-weight:700;font-size:15px;color:#fff;">{{ $account->nickname }}</span>
+                                    <span style="font-weight:700;font-size:15px;color:var(--text-strong);">{{ $account->nickname }}</span>
                                     @if($isSelected)
                                     <span class="active-badge"><span class="dot"></span>Activa</span>
                                     @endif
@@ -174,7 +174,7 @@
 
         {{-- Conectar nueva --}}
         <div class="glass-card p-4 mb-4">
-            <h6 style="font-size:13px;font-weight:700;color:#fff;margin-bottom:8px;">
+            <h6 style="font-size:13px;font-weight:700;color:var(--text-strong);margin-bottom:8px;">
                 <i class="bi bi-plus-circle me-2" style="color:var(--neon-green);"></i>Conectar nueva tienda
             </h6>
             <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">

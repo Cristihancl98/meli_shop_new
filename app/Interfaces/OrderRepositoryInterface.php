@@ -15,6 +15,10 @@ interface OrderRepositoryInterface
 
     public function findByAccountId(int $accountId): \Illuminate\Database\Eloquent\Collection;
 
+    public function findForAccount(int $accountId, int $id): ?Order;
+
+    public function findByConversation(int $accountId, string $packOrOrderId): ?Order;
+
     public function create(array $data): Order;
 
     public function update(Order $order, array $data): Order;

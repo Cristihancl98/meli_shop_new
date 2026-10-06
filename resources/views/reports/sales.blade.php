@@ -25,7 +25,7 @@
             @can('export-report')
             <div class="col-12 col-md-4 d-flex gap-2 justify-content-end">
                 <a href="{{ route('reports.export.sales', ['date_from' => $dateFrom, 'date_to' => $dateTo]) }}"
-                   class="btn-ghost" style="color:#34d399;border-color:rgba(52,211,153,.3);">
+                   class="btn-ghost" style="color:var(--success-fg);border-color:rgba(52,211,153,.3);">
                     <i class="bi bi-file-earmark-excel me-1"></i>Exportar Excel
                 </a>
             </div>
@@ -53,7 +53,7 @@
                 <div class="kpi-icon kpi-green"><i class="bi bi-check-circle"></i></div>
                 <div>
                     <div class="metric-label">Órdenes pagadas</div>
-                    <div class="metric-value" style="color:#34d399;">{{ number_format($paid_orders) }}</div>
+                    <div class="metric-value" style="color:var(--success-fg);">{{ number_format($paid_orders) }}</div>
                 </div>
             </div>
         </div>
@@ -120,14 +120,14 @@
                 $s = $sMap[$order->status] ?? ['class'=>'badge-pending','l'=>$order->status];
                 @endphp
                 <tr>
-                    <td style="padding-left:24px;font-weight:700;color:#fff;">#{{ $order->id }}</td>
+                    <td style="padding-left:24px;font-weight:700;color:var(--text-strong);">#{{ $order->id }}</td>
                     <td>{{ $order->customer?->nickname ?: ($order->customer?->name ?: '—') }}</td>
                     <td>
                         <span style="background:rgba(0,212,255,.08);color:var(--neon-blue);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;">
                             {{ $order->items->count() }}
                         </span>
                     </td>
-                    <td class="text-end" style="font-weight:700;color:#fff;">${{ number_format($order->total_amount, 0, ',', '.') }}</td>
+                    <td class="text-end" style="font-weight:700;color:var(--text-strong);">${{ number_format($order->total_amount, 0, ',', '.') }}</td>
                     <td><span class="badge {{ $s['class'] }}" style="font-size:10px;padding:4px 10px;">{{ $s['l'] }}</span></td>
                     <td style="font-size:12px;color:var(--text-muted);">{{ $order->order_date?->format('d/m/Y H:i') }}</td>
                     <td>

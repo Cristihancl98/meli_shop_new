@@ -69,7 +69,7 @@ $p = $payMap[$order->payment_status] ?? ['class' => 'badge-pending', 'label' => 
         <div class="glass-card p-4 mb-4">
             <div class="d-flex justify-content-between align-items-start mb-4">
                 <div>
-                    <h5 style="color:#fff;font-weight:700;margin-bottom:4px;">Orden #{{ $order->id }}</h5>
+                    <h5 style="color:var(--text-strong);font-weight:700;margin-bottom:4px;">Orden #{{ $order->id }}</h5>
                     @if($order->meli_order_id)
                     <p style="font-size:12px;color:var(--text-muted);margin:0;">
                         MeLi ID: <code class="dark">{{ $order->meli_order_id }}</code>
@@ -113,10 +113,10 @@ $p = $payMap[$order->payment_status] ?? ['class' => 'badge-pending', 'label' => 
                 @if($item->product?->thumbnail)
                 <img src="{{ $item->product->thumbnail }}"
                      alt="{{ $item->title }}"
-                     style="width:52px;height:52px;object-fit:contain;border-radius:8px;border:1px solid var(--border-glow);background:rgba(255,255,255,.02);"
+                     style="width:52px;height:52px;object-fit:contain;border-radius:8px;border:1px solid var(--border-glow);background:var(--overlay-soft);"
                      onerror="this.src='https://placehold.co/52x52/0d1733/475569?text=?'">
                 @else
-                <div style="width:52px;height:52px;border-radius:8px;background:rgba(255,255,255,.04);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <div style="width:52px;height:52px;border-radius:8px;background:var(--overlay-soft);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
                     <i class="bi bi-box-seam" style="color:var(--text-muted);font-size:20px;"></i>
                 </div>
                 @endif
@@ -132,7 +132,7 @@ $p = $payMap[$order->payment_status] ?? ['class' => 'badge-pending', 'label' => 
 
                 <div class="text-center" style="min-width:60px;">
                     <div style="font-size:10px;color:var(--text-muted);">Cantidad</div>
-                    <div style="font-weight:700;color:#fff;">{{ $item->quantity }}</div>
+                    <div style="font-weight:700;color:var(--text-strong);">{{ $item->quantity }}</div>
                 </div>
                 <div class="text-center" style="min-width:100px;">
                     <div style="font-size:10px;color:var(--text-muted);">Precio unit.</div>
@@ -140,7 +140,7 @@ $p = $payMap[$order->payment_status] ?? ['class' => 'badge-pending', 'label' => 
                 </div>
                 <div class="text-end" style="min-width:110px;">
                     <div style="font-size:10px;color:var(--text-muted);">Subtotal</div>
-                    <div style="font-weight:700;font-size:15px;color:#fff;">${{ number_format($item->total_price, 0, ',', '.') }}</div>
+                    <div style="font-weight:700;font-size:15px;color:var(--text-strong);">${{ number_format($item->total_price, 0, ',', '.') }}</div>
                 </div>
             </div>
             @empty
@@ -172,10 +172,10 @@ $p = $payMap[$order->payment_status] ?? ['class' => 'badge-pending', 'label' => 
             @if($order->customer)
             <div class="d-flex align-items-center gap-3 mb-4">
                 <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--neon-purple),var(--neon-blue));display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                    <i class="bi bi-person" style="color:#fff;font-size:22px;"></i>
+                    <i class="bi bi-person" style="color:var(--text-strong);font-size:22px;"></i>
                 </div>
                 <div>
-                    <div style="font-weight:700;font-size:14px;color:#fff;">
+                    <div style="font-weight:700;font-size:14px;color:var(--text-strong);">
                         {{ $order->customer->name ?: $order->customer->nickname }}
                     </div>
                     @if($order->customer->nickname && $order->customer->name)
@@ -205,6 +205,40 @@ $p = $payMap[$order->payment_status] ?? ['class' => 'badge-pending', 'label' => 
             @else
             <p style="color:var(--text-muted);font-size:13px;margin:0;">Sin información de cliente</p>
             @endif
+        </div>
+
+        {{-- Gestión de la venta --}}
+        <div class="glass-card p-4 mb-4">
+            <div class="side-section-title"><i class="bi bi-cash-coin me-1"></i>Gestión</div>
+
+            @can('updateFinalPrice', $order)
+                <form method="POST" action="{{ route('orders.final-price', $order->id) }}" class="mb-3">
+                    @csrf
+                    @method('PUT')
+                    <label class="form-label">Precio final / costo real (COP)</label>
+                    <div class="d-flex gap-2">
+                        <input type="number" step="0.01" min="0" name="final_price" class="form-control" value="{{ old('final_price', $order->final_price) }}" required>
+                        <button class="btn-neon"><i class="bi bi-save"></i></button>
+                    </div>
+                </form>
+            @else
+                <div class="info-row">
+                    <span class="lbl">Precio final</span>
+                    <span class="val">{{ $order->final_price !== null ? '$' . number_format($order->final_price, 0, ',', '.') : '—' }}</span>
+                </div>
+            @endcan
+
+            @can('downloadLabel', $order)
+                @if($order->shipping_id)
+                    <a href="{{ route('orders.shipping-label', $order->id) }}" class="btn-ghost w-100 text-center d-block">
+                        <i class="bi bi-printer me-1"></i>Descargar etiqueta de envío
+                    </a>
+                @endif
+            @endcan
+
+            <a href="{{ route('post-sale.index') }}" class="btn-ghost w-100 text-center d-block mt-2">
+                <i class="bi bi-chat-dots me-1"></i>Mensajería posventa
+            </a>
         </div>
 
         {{-- Info MeLi --}}

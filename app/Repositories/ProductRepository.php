@@ -18,6 +18,16 @@ class ProductRepository implements ProductRepositoryInterface
             $query->where('title', 'like', '%' . $filters['search'] . '%');
         }
 
+        if (!empty($filters['sku'])) {
+            $query->where('sku', $filters['sku']);
+        }
+
+        if (!empty($filters['published_on'])) {
+            $query->where(fn ($q) => $q
+                ->whereDate('published_at', $filters['published_on'])
+                ->orWhere(fn ($q) => $q->whereNull('published_at')->whereDate('created_at', $filters['published_on'])));
+        }
+
         if (!empty($filters['status'])) {
             $query->where('status', $filters['status']);
         }
@@ -34,7 +44,7 @@ class ProductRepository implements ProductRepositoryInterface
             $query->where('price', '<=', $filters['max_price']);
         }
 
-        return $query->latest('updated_at')->paginate($perPage);
+        return $query->latest('updated_at')->paginate($perPage)->withQueryString();
     }
 
     public function find(int $id): ?Product
@@ -45,6 +55,35 @@ class ProductRepository implements ProductRepositoryInterface
     public function findByMeliItemId(string $meliItemId): ?Product
     {
         return Product::where('meli_item_id', $meliItemId)->first();
+    }
+
+    public function findBySku(int $accountId, string $sku): Collection
+    {
+        return Product::where('mercadolibre_account_id', $accountId)->where('sku', $sku)->get();
+    }
+
+    public function existsSku(int $accountId, string $sku): bool
+    {
+        return Product::withTrashed()
+            ->where('mercadolibre_account_id', $accountId)
+            ->where('sku', $sku)
+            ->exists();
+    }
+
+    public function findForAccount(int $accountId, int $id): ?Product
+    {
+        return Product::with(['category', 'statistics'])
+            ->where('mercadolibre_account_id', $accountId)
+            ->find($id);
+    }
+
+    public function meliItemIdsChunked(int $accountId, int $size, callable $callback): void
+    {
+        Product::where('mercadolibre_account_id', $accountId)
+            ->whereNotNull('meli_item_id')
+            ->orderBy('last_sync')
+            ->select(['id', 'meli_item_id'])
+            ->chunkById($size, fn ($products) => $callback($products->pluck('meli_item_id')->all()));
     }
 
     public function create(array $data): Product
@@ -72,9 +111,12 @@ class ProductRepository implements ProductRepositoryInterface
             ->toArray();
 
         return [
-            'active' => $counts['active'] ?? 0,
-            'paused' => $counts['paused'] ?? 0,
-            'closed' => $counts['closed'] ?? 0,
+            'active'       => $counts['active'] ?? 0,
+            'paused'       => $counts['paused'] ?? 0,
+            'closed'       => $counts['closed'] ?? 0,
+            'under_review' => $counts['under_review'] ?? 0,
+            'inactive'     => $counts['inactive'] ?? 0,
+            'total'        => array_sum($counts),
         ];
     }
 

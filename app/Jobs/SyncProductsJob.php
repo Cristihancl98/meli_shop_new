@@ -7,6 +7,7 @@ use App\Events\SyncFailed;
 use App\Interfaces\ProductRepositoryInterface;
 use App\Models\Category;
 use App\Models\MercadolibreAccount;
+use App\Models\Product;
 use App\Models\SyncLog;
 use App\Services\MercadoLibreService;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -38,7 +39,7 @@ class SyncProductsJob implements ShouldQueue
             $limit   = 50;
 
             do {
-                $response = $meliService->getProducts($this->account, ['offset' => $offset, 'limit' => $limit]);
+                $response = $meliService->getProducts($this->account, $offset, $limit);
                 $itemIds  = $response['results'] ?? [];
 
                 foreach ($itemIds as $itemId) {
@@ -87,19 +88,22 @@ class SyncProductsJob implements ShouldQueue
             $categoryId = $cat?->id;
         }
 
-        $status = match ($data['status'] ?? 'closed') {
-            'active' => 'active',
-            'paused' => 'paused',
-            default  => 'closed',
-        };
+        $sku = collect($data['attributes'] ?? [])->firstWhere('id', 'SELLER_SKU')['value_name'] ?? null;
 
         return [
             'meli_item_id'    => $data['id'],
+            'meli_category_id'=> $data['category_id'] ?? null,
+            'published_at'    => isset($data['date_created']) ? \Carbon\Carbon::parse($data['date_created']) : null,
+            'sku'             => $sku,
+            'meli_attributes' => $data['attributes'] ?? null,
+            'pictures'        => array_values(array_filter(array_column($data['pictures'] ?? [], 'secure_url'))),
+            'variations'      => $data['variations'] ?? null,
+            'sold_quantity'   => $data['sold_quantity'] ?? 0,
             'category_id'     => $categoryId,
             'title'           => $data['title'] ?? '',
             'price'           => $data['price'] ?? 0,
             'stock'           => $data['available_quantity'] ?? 0,
-            'status'          => $status,
+            'status'          => Product::normalizeMeliStatus($data['status'] ?? null),
             'condition'       => $data['condition'] ?? 'new',
             'listing_type_id' => $data['listing_type_id'] ?? null,
             'thumbnail'       => $data['thumbnail'] ?? null,

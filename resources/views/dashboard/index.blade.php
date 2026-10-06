@@ -6,8 +6,8 @@
 @push('styles')
 <style>
     .kpi-trend { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
-    .kpi-trend .up   { color: #34d399; }
-    .kpi-trend .down { color: #f87171; }
+    .kpi-trend .up   { color:var(--success-fg); }
+    .kpi-trend .down { color:var(--danger-fg); }
 
     .section-header {
         display: flex;
@@ -19,7 +19,7 @@
     .section-header h6 {
         font-size: 13px;
         font-weight: 700;
-        color: #fff;
+        color:var(--text-strong);
         margin: 0;
     }
 
@@ -125,7 +125,7 @@
                 <div class="flex-fill">
                     <div class="metric-label">Órdenes pendientes</div>
                     <div class="metric-value {{ $metrics['orders_pending'] > 0 ? '' : '' }}"
-                         style="{{ $metrics['orders_pending'] > 0 ? 'color:#fbbf24;' : '' }}">
+                         style="{{ $metrics['orders_pending'] > 0 ? 'color:var(--warning-fg);' : '' }}">
                         {{ number_format($metrics['orders_pending']) }}
                     </div>
                 </div>
@@ -140,7 +140,7 @@
                 </div>
                 <div class="flex-fill">
                     <div class="metric-label">Stock bajo (≤5)</div>
-                    <div class="metric-value" style="{{ $metrics['low_stock_count'] > 0 ? 'color:#f87171;' : '' }}">
+                    <div class="metric-value" style="{{ $metrics['low_stock_count'] > 0 ? 'color:var(--danger-fg);' : '' }}">
                         {{ number_format($metrics['low_stock_count']) }}
                     </div>
                 </div>
@@ -222,14 +222,14 @@
                 <img
                     src="{{ $product->thumbnail ?: 'https://placehold.co/36x36/0d1733/475569?text=?' }}"
                     alt="{{ $product->title }}"
-                    style="width:36px;height:36px;object-fit:contain;border-radius:8px;border:1px solid var(--border-glow);background:rgba(255,255,255,.03);"
+                    style="width:36px;height:36px;object-fit:contain;border-radius:8px;border:1px solid var(--border-glow);background:var(--overlay-soft);"
                     onerror="this.src='https://placehold.co/36x36/0d1733/475569?text=?'">
                 <div class="flex-fill overflow-hidden">
                     <div class="fw-semibold text-truncate" style="font-size:12px;color:var(--text-primary);">{{ $product->title }}</div>
                     <div style="font-size:11px;color:var(--text-muted);">${{ number_format($product->price, 0, ',', '.') }} COP</div>
                 </div>
                 <div class="text-end flex-shrink-0">
-                    <div class="fw-bold" style="font-size:13px;color:#fff;">{{ $product->statistics?->quantity_sold ?? 0 }}</div>
+                    <div class="fw-bold" style="font-size:13px;color:var(--text-strong);">{{ $product->statistics?->quantity_sold ?? 0 }}</div>
                     <div style="font-size:10px;color:var(--text-muted);">uds.</div>
                 </div>
             </div>
@@ -272,7 +272,7 @@
                     </div>
                 </div>
                 <div class="text-end flex-shrink-0">
-                    <div class="fw-bold" style="font-size:14px;color:#fff;">${{ number_format($order->total_amount, 0, ',', '.') }}</div>
+                    <div class="fw-bold" style="font-size:14px;color:var(--text-strong);">${{ number_format($order->total_amount, 0, ',', '.') }}</div>
                     <a href="{{ route('orders.show', $order) }}" style="font-size:11px;color:var(--neon-blue);">Ver detalle →</a>
                 </div>
             </div>
@@ -293,31 +293,70 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
 Chart.defaults.font.family = "'Inter', system-ui, sans-serif";
-Chart.defaults.color = '#64748b';
 
-const gridColor = 'rgba(0,212,255,0.06)';
+const chartTheme = () => ({
+    accent:  themeColor('--neon-blue'),
+    grid:    themeColor('--chart-grid'),
+    tick:    themeColor('--chart-tick'),
+    surface: themeColor('--surface-raised'),
+    border:  themeColor('--border-glow'),
+    title:   themeColor('--text-muted'),
+    body:    themeColor('--text-strong'),
+});
+
+const tooltipTheme = (t) => ({
+    backgroundColor: t.surface,
+    borderColor:     t.border,
+    borderWidth:     1,
+    titleColor:      t.title,
+    bodyColor:       t.body,
+});
+
+const themedCharts = [];
+
+const applyChartTheme = (chart) => {
+    const t = chartTheme();
+    Chart.defaults.color = t.tick;
+    Object.assign(chart.options.plugins.tooltip, tooltipTheme(t));
+
+    Object.values(chart.options.scales || {}).forEach((scale) => {
+        scale.ticks.color = t.tick;
+        if (scale.grid && scale.grid.display !== false) {
+            scale.grid.color = t.grid;
+        }
+    });
+
+    if (chart.config.type === 'line') {
+        chart.data.datasets[0].borderColor = t.accent;
+        chart.data.datasets[0].pointBackgroundColor = t.accent;
+    }
+
+    chart.update('none');
+};
+
+window.addEventListener('themechange', () => themedCharts.forEach(applyChartTheme));
 
 // ── Ventas diarias ──
 const dailyLabels  = @json($dailySales['labels']);
 const dailyRevenue = @json($dailySales['revenue']);
 
-new Chart(document.getElementById('chartDailySales'), {
+themedCharts.push(new Chart(document.getElementById('chartDailySales'), {
     type: 'line',
     data: {
         labels: dailyLabels,
         datasets: [{
             label: 'Ingresos COP',
             data: dailyRevenue,
-            borderColor: '#00d4ff',
+            borderColor: themeColor('--neon-blue'),
             backgroundColor: (ctx) => {
                 const g = ctx.chart.ctx.createLinearGradient(0, 0, 0, 260);
-                g.addColorStop(0,   'rgba(0,212,255,0.2)');
-                g.addColorStop(1,   'rgba(0,212,255,0)');
+                g.addColorStop(0,   'rgba(14,165,233,0.2)');
+                g.addColorStop(1,   'rgba(14,165,233,0)');
                 return g;
             },
             borderWidth: 2,
             pointRadius: 3,
-            pointBackgroundColor: '#00d4ff',
+            pointBackgroundColor: themeColor('--neon-blue'),
             pointHoverRadius: 6,
             fill: true,
             tension: 0.4,
@@ -328,29 +367,24 @@ new Chart(document.getElementById('chartDailySales'), {
         plugins: {
             legend: { display: false },
             tooltip: {
-                backgroundColor: '#0d1733',
-                borderColor: 'rgba(0,212,255,.2)',
-                borderWidth: 1,
-                titleColor: '#94a3b8',
-                bodyColor: '#fff',
                 callbacks: { label: ctx => '$' + ctx.parsed.y.toLocaleString('es-CO') + ' COP' }
             }
         },
         scales: {
-            x: { grid: { display: false }, ticks: { maxTicksLimit: 10, font: { size: 10 }, color: '#475569' } },
+            x: { grid: { display: false }, ticks: { maxTicksLimit: 10, font: { size: 10 }, color: themeColor('--chart-tick') } },
             y: {
-                grid: { color: gridColor },
+                grid: { color: themeColor('--chart-grid') },
                 ticks: {
-                    font: { size: 10 }, color: '#475569',
+                    font: { size: 10 }, color: themeColor('--chart-tick'),
                     callback: v => '$' + (v >= 1000000 ? (v/1000000).toFixed(1) + 'M' : (v/1000).toFixed(0) + 'k')
                 }
             }
         }
     }
-});
+}));
 
 // ── Estado de órdenes (dona) ──
-new Chart(document.getElementById('chartOrderStatus'), {
+themedCharts.push(new Chart(document.getElementById('chartOrderStatus'), {
     type: 'doughnut',
     data: {
         labels: ['Pagadas', 'Pendientes', 'Canceladas'],
@@ -367,22 +401,17 @@ new Chart(document.getElementById('chartOrderStatus'), {
         plugins: {
             legend: { display: false },
             tooltip: {
-                backgroundColor: '#0d1733',
-                borderColor: 'rgba(0,212,255,.2)',
-                borderWidth: 1,
-                titleColor: '#94a3b8',
-                bodyColor: '#fff',
                 callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed}` }
             }
         }
     }
-});
+}));
 
 // ── Ingresos mensuales (barras) ──
 const monthlyLabels  = @json($monthlyRevenue['labels']);
 const monthlyRevData = @json($monthlyRevenue['revenue']);
 
-new Chart(document.getElementById('chartMonthlyRevenue'), {
+themedCharts.push(new Chart(document.getElementById('chartMonthlyRevenue'), {
     type: 'bar',
     data: {
         labels: monthlyLabels,
@@ -404,25 +433,22 @@ new Chart(document.getElementById('chartMonthlyRevenue'), {
         plugins: {
             legend: { display: false },
             tooltip: {
-                backgroundColor: '#0d1733',
-                borderColor: 'rgba(0,212,255,.2)',
-                borderWidth: 1,
-                titleColor: '#94a3b8',
-                bodyColor: '#fff',
                 callbacks: { label: ctx => '$' + ctx.parsed.y.toLocaleString('es-CO') + ' COP' }
             }
         },
         scales: {
-            x: { grid: { display: false }, ticks: { font: { size: 11 }, color: '#475569' } },
+            x: { grid: { display: false }, ticks: { font: { size: 11 }, color: themeColor('--chart-tick') } },
             y: {
-                grid: { color: gridColor },
+                grid: { color: themeColor('--chart-grid') },
                 ticks: {
-                    font: { size: 11 }, color: '#475569',
+                    font: { size: 11 }, color: themeColor('--chart-tick'),
                     callback: v => '$' + (v >= 1000000 ? (v/1000000).toFixed(1) + 'M' : (v/1000).toFixed(0) + 'k')
                 }
             }
         }
     }
-});
+}));
+
+themedCharts.forEach(applyChartTheme);
 </script>
 @endpush

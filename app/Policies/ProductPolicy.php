@@ -36,4 +36,19 @@ class ProductPolicy
     {
         return $user->isAdmin();
     }
+
+    public function publish(User $user): bool
+    {
+        return $user->isAdmin();
+    }
+
+    public function changeStatus(User $user, Product $product): bool
+    {
+        return $user->isAdmin();
+    }
+
+    public function archive(User $user, Product $product): bool
+    {
+        return $user->isAdmin();
+    }
 }

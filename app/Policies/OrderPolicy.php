@@ -21,4 +21,14 @@ class OrderPolicy
     {
         return $user->isAdmin();
     }
+
+    public function updateFinalPrice(User $user, Order $order): bool
+    {
+        return $user->isAdmin();
+    }
+
+    public function downloadLabel(User $user, Order $order): bool
+    {
+        return $user->isAdmin() || $user->isOperator();
+    }
 }

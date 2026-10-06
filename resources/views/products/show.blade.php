@@ -16,7 +16,7 @@
     .detail-value {
         font-size: 15px;
         font-weight: 700;
-        color: #fff;
+        color:var(--text-strong);
     }
     .stat-row {
         display: flex;
@@ -28,7 +28,7 @@
     }
     .stat-row:last-child { border-bottom: none; }
     .stat-row .label { color: var(--text-muted); }
-    .stat-row .value { font-weight: 600; color: #fff; }
+    .stat-row .value { font-weight: 600; color:var(--text-strong); }
     code.dark { background: rgba(0,212,255,.08); color: var(--neon-blue); padding: 2px 8px; border-radius: 5px; font-size: 11px; }
 </style>
 @endpush
@@ -41,10 +41,12 @@
     </a>
     <span class="badge badge-{{ $product->status }}" style="font-size:12px;padding:6px 14px;">
         {{ match($product->status) {
-            'active' => 'Activo',
-            'paused' => 'Pausado',
-            'closed' => 'Finalizado',
-            default  => $product->status,
+            'active'       => 'Activo',
+            'paused'       => 'Pausado',
+            'closed'       => 'Finalizado',
+            'under_review' => 'En revisión',
+            'inactive'     => 'Inactivo',
+            default        => $product->status,
         } }}
     </span>
 </div>
@@ -54,7 +56,7 @@
     {{-- Imagen y acciones --}}
     <div class="col-lg-4">
         <div class="glass-card p-3 text-center mb-3"
-             style="background:rgba(255,255,255,.02);">
+             style="background:var(--overlay-soft);">
             <img
                 src="{{ $product->thumbnail ?: 'https://placehold.co/400x300/0d1733/475569?text=Sin+imagen' }}"
                 alt="{{ $product->title }}"
@@ -70,7 +72,7 @@
             @if($product->meli_item_id)
                 <form method="POST" action="{{ route('products.sync', $product) }}" class="flex-fill">
                     @csrf
-                    <button type="submit" class="btn-ghost w-100" style="color:#34d399;">
+                    <button type="submit" class="btn-ghost w-100" style="color:var(--success-fg);">
                         <i class="bi bi-arrow-repeat me-1"></i> Sincronizar
                     </button>
                 </form>
@@ -78,9 +80,42 @@
         </div>
 
         @if($product->permalink)
-            <a href="{{ $product->permalink }}" target="_blank" class="btn-ghost w-100 text-center d-block">
+            <a href="{{ $product->permalink }}" target="_blank" class="btn-ghost w-100 text-center d-block mb-2">
                 <i class="bi bi-box-arrow-up-right me-1"></i> Ver en Mercado Libre
             </a>
+        @endif
+
+        @can('changeStatus', $product)
+            @if($product->meli_item_id)
+                <div class="d-flex gap-2 mb-2">
+                    @if($product->status === 'active')
+                        <form method="POST" action="{{ route('products.pause', $product->id) }}" class="flex-fill">
+                            @csrf
+                            <button class="btn-ghost w-100" style="color:var(--warning-fg);"><i class="bi bi-pause-circle me-1"></i> Pausar</button>
+                        </form>
+                    @elseif($product->status === 'paused')
+                        <form method="POST" action="{{ route('products.activate', $product->id) }}" class="flex-fill">
+                            @csrf
+                            <button class="btn-ghost w-100" style="color:var(--success-fg);"><i class="bi bi-play-circle me-1"></i> Activar</button>
+                        </form>
+                    @endif
+                </div>
+            @endif
+        @endcan
+
+        @can('archive', $product)
+            <form method="POST" action="{{ route('products.archive', $product->id) }}" onsubmit="return confirm('¿Archivar este producto? Solo se oculta localmente, no se cierra en Mercado Libre.');">
+                @csrf
+                <button class="btn-ghost w-100" style="color:var(--danger-fg);"><i class="bi bi-archive me-1"></i> Archivar</button>
+            </form>
+        @endcan
+
+        @if($product->pictures && count($product->pictures) > 1)
+            <div class="d-flex flex-wrap gap-2 mt-3">
+                @foreach($product->pictures as $picture)
+                    <img src="{{ $picture }}" width="56" height="56" style="object-fit:contain;border-radius:6px;background:var(--overlay-soft);" alt="">
+                @endforeach
+            </div>
         @endif
     </div>
 
@@ -88,7 +123,7 @@
     <div class="col-lg-8">
 
         <div class="glass-card p-4 mb-4">
-            <h4 style="color:#fff;font-weight:700;margin-bottom:20px;line-height:1.3;">{{ $product->title }}</h4>
+            <h4 style="color:var(--text-strong);font-weight:700;margin-bottom:20px;line-height:1.3;">{{ $product->title }}</h4>
 
             <div class="row g-3 mb-4">
                 <div class="col-6 col-md-3">
@@ -101,10 +136,10 @@
                 <div class="col-6 col-md-3">
                     <div class="detail-label">Stock</div>
                     <div class="detail-value {{ $product->stock === 0 ? '' : '' }}"
-                         style="{{ $product->stock === 0 ? 'color:#f87171;' : '' }}">
+                         style="{{ $product->stock === 0 ? 'color:var(--danger-fg);' : '' }}">
                         {{ $product->stock }}
                         @if($product->stock === 0)
-                            <small style="font-size:11px;color:#f87171;font-weight:400;display:block;">Sin stock</small>
+                            <small style="font-size:11px;color:var(--danger-fg);font-weight:400;display:block;">Sin stock</small>
                         @endif
                     </div>
                 </div>
@@ -163,9 +198,78 @@
                         <span class="label">Última sync</span>
                         <span class="value">{{ $product->last_sync?->diffForHumans() ?? 'Nunca' }}</span>
                     </div>
+                    <div class="stat-row">
+                        <span class="label">Categoría MeLi</span>
+                        <code class="dark">{{ $product->meli_category_id ?? '—' }}</code>
+                    </div>
+                    <div class="stat-row">
+                        <span class="label">Publicado</span>
+                        <span class="value">{{ $product->published_at?->format('d/m/Y') ?? '—' }}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="label">Descripción en MeLi</span>
+                        <span class="value" style="color:var({{ $product->description_synced ? '--success-fg' : '--warning-fg' }});">{{ $product->description_synced ? 'Sincronizada' : 'Pendiente' }}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="label">SKU</span>
+                        <code class="dark">{{ $product->sku ?? '—' }}</code>
+                    </div>
+                    <div class="stat-row">
+                        <span class="label">Precio base (USD)</span>
+                        <span class="value">{{ $product->base_price !== null ? number_format($product->base_price, 2, ',', '.') : '—' }}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="label">Peso (lb)</span>
+                        <span class="value">{{ $product->weight ?? '—' }}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="label">Vendidos en MeLi</span>
+                        <span class="value">{{ $product->sold_quantity }}</span>
+                    </div>
                 </div>
             </div>
         </div>
+
+        @can('update', $product)
+            @if($product->meli_item_id)
+                <div class="glass-card p-4 mt-4">
+                    <h6 style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--neon-purple);margin-bottom:14px;">
+                        <i class="bi bi-pencil-square me-1"></i>Editar publicación en Mercado Libre
+                    </h6>
+                    <form method="POST" action="{{ route('products.listing', $product->id) }}">
+                        @csrf
+                        @method('PATCH')
+                        <div class="row g-3">
+                            <div class="col-md-12">
+                                <label class="form-label">Título</label>
+                                <input type="text" name="title" maxlength="60" class="form-control" value="{{ old('title', $product->title) }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Precio (COP)</label>
+                                <input type="number" step="1" min="1" name="price" class="form-control" value="{{ old('price', (int) $product->price) }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Precio base (USD)</label>
+                                <input type="number" step="0.01" min="0" name="base_price" class="form-control" value="{{ old('base_price', $product->base_price) }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Cantidad</label>
+                                <input type="number" min="0" name="quantity" class="form-control" value="{{ old('quantity', $product->stock) }}">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Imágenes (una URL por línea, vacío = sin cambios)</label>
+                                <textarea name="pictures" rows="3" class="form-control">{{ old('pictures') }}</textarea>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Descripción (vacío = sin cambios; se agrega la plantilla)</label>
+                                <textarea name="description" rows="5" class="form-control">{{ old('description') }}</textarea>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn-neon mt-3"><i class="bi bi-cloud-arrow-up me-1"></i> Actualizar en Mercado Libre</button>
+                    </form>
+                </div>
+            @endif
+        @endcan
 
     </div>
 </div>

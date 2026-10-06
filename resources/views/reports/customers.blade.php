@@ -8,7 +8,7 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <p style="font-size:13px;color:var(--text-muted);margin:0;">Top 20 clientes ordenados por total gastado en COP</p>
     @can('export-report')
-    <a href="{{ route('reports.export.customers') }}" class="btn-ghost" style="color:#34d399;border-color:rgba(52,211,153,.3);">
+    <a href="{{ route('reports.export.customers') }}" class="btn-ghost" style="color:var(--success-fg);border-color:rgba(52,211,153,.3);">
         <i class="bi bi-file-earmark-excel me-1"></i>Exportar Excel
     </a>
     @endcan
@@ -45,7 +45,7 @@
                     <td>
                         <div class="d-flex align-items-center gap-3">
                             <div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--neon-purple),var(--neon-blue));display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                                <span style="color:#fff;font-size:13px;font-weight:700;">
+                                <span style="color:var(--text-strong);font-size:13px;font-weight:700;">
                                     {{ strtoupper(substr($customer->name ?: $customer->nickname, 0, 1)) }}
                                 </span>
                             </div>

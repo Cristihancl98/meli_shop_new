@@ -3,9 +3,13 @@
 namespace App\Services;
 
 use App\DTOs\OrderDTO;
+use App\Exceptions\BusinessRuleException;
+use App\Exceptions\MeliApiException;
 use App\Interfaces\MercadolibreAccountRepositoryInterface;
 use App\Interfaces\OrderRepositoryInterface;
 use App\Models\Customer;
+use App\Models\MercadolibreAccount;
+use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -78,6 +82,35 @@ class OrderService
         }
 
         return compact('synced', 'errors');
+    }
+
+    public function findForAccount(MercadolibreAccount $account, int $id): ?Order
+    {
+        return $this->orderRepository->findForAccount($account->id, $id);
+    }
+
+    public function setFinalPrice(Order $order, float $finalPrice): Order
+    {
+        return $this->orderRepository->update($order, ['final_price' => $finalPrice]);
+    }
+
+    public function shippingLabel(MercadolibreAccount $account, Order $order): string
+    {
+        if (!$order->shipping_id) {
+            throw new BusinessRuleException('La venta no tiene envío asociado.');
+        }
+
+        $response = $this->meliService->getShippingLabel($account, $order->shipping_id);
+
+        if ($response->status() === 400) {
+            throw new BusinessRuleException('La etiqueta no está disponible: el envío ya fue entregado o no está listo.');
+        }
+
+        if (!$response->successful()) {
+            throw MeliApiException::fromResponse('descargar etiqueta', $response->json() ?? []);
+        }
+
+        return $response->body();
     }
 
     private function ensureCustomer(array $meliOrder, int $accountId): ?int
