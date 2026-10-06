@@ -1,0 +1,77 @@
+x-env: &env
+  DB_HOST: mysql
+  DB_PORT: 3306
+  DB_DATABASE: ${DOCKER_DB_DATABASE:-marketplace_manager}
+  DB_USERNAME: ${DOCKER_DB_USERNAME:-meli}
+  DB_PASSWORD: ${DOCKER_DB_PASSWORD:-secret}
+  QUEUE_CONNECTION: database
+
+x-php: &php
+  build:
+    context: .
+    args:
+      UID: ${UID:-1000}
+      GID: ${GID:-1000}
+  image: melilaravel-php
+  volumes:
+    - ./:/var/www/html
+  environment: *env
+  depends_on:
+    mysql:
+      condition: service_healthy
+  restart: unless-stopped
+
+services:
+  app:
+    <<: *php
+    container_name: meli_app
+    environment:
+      <<: *env
+      CONTAINER_ROLE: app
+
+  queue:
+    <<: *php
+    container_name: meli_queue
+    profiles: ["workers"]
+    command: php artisan queue:work --queue=default --tries=3 --sleep=3
+
+  scheduler:
+    <<: *php
+    container_name: meli_scheduler
+    profiles: ["workers"]
+    command: php artisan schedule:work
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: meli_nginx
+    ports:
+      - "${APP_PORT:-8000}:80"
+    volumes:
+      - ./:/var/www/html:ro
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - app
+    restart: unless-stopped
+
+  mysql:
+    image: mysql:8.4
+    container_name: meli_mysql
+    ports:
+      - "${FORWARD_DB_PORT:-3307}:3306"
+    environment:
+      MYSQL_DATABASE: ${DOCKER_DB_DATABASE:-marketplace_manager}
+      MYSQL_USER: ${DOCKER_DB_USERNAME:-meli}
+      MYSQL_PASSWORD: ${DOCKER_DB_PASSWORD:-secret}
+      MYSQL_ROOT_PASSWORD: ${DOCKER_DB_ROOT_PASSWORD:-root}
+      TZ: America/Bogota
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${DOCKER_DB_ROOT_PASSWORD:-root}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
