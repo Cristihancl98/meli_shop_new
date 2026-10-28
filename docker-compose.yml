@@ -17,6 +17,8 @@ x-php: &php
   volumes:
     - ./:/var/www/html
   environment: *env
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
   depends_on:
     mysql:
       condition: service_healthy

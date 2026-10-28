@@ -1,8 +1,37 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 # Marketplace Manager — Mercado Libre Colombia
 
 ## Descripción del Proyecto
 
 Panel administrativo para gestionar publicaciones, ventas, clientes y métricas de Mercado Libre Colombia (MCO) desde una sola interfaz.
+
+Es una **migración en curso desde una app CodeIgniter**: los comentarios `migrado de Gestion / Inicio / Configuraciones / Precio` en `routes/` señalan los módulos portados, y sus tests viven en `tests/Feature/Migrated/`. Documentación extendida en `.claude/docs/` (arquitectura, autenticación, multi-tienda, rutas, base de datos, instalación).
+
+---
+
+## Multi-tienda (tenancy) — leer antes de tocar BD, jobs o comandos
+
+Hay **dos niveles** de multi-tenencia:
+
+1. **Tienda (`Store`) = una base de datos MySQL propia.** La BD central (`landlord`, p. ej. `meli_central`) solo guarda `stores`, `store_meli_accounts`, sessions, cache y jobs. Todo lo demás (users, products, orders…) vive en la BD de cada tienda (`meli_store_<slug>`), conexión `tenant`, que es la conexión por defecto (`DB_CONNECTION=tenant`) y cuyo `database` es `null` hasta que se activa una tienda.
+2. **Cuenta MeLi (`MercadolibreAccount`) dentro de la tienda.** Un usuario vincula N cuentas; la activa se toma de `session('active_meli_account_id')` (web) o del header `X-Meli-Account` (API) vía el trait `ResolvesMeliAccount`.
+
+`App\Services\TenantManager` (singleton) cambia la conexión `tenant` (`config(...)` + `DB::purge('tenant')`). Puntos de activación:
+- **Web**: `IdentifyTenantFromSession` (añadido al grupo `web`) lee `session('store_id')`; sin tienda redirige a `/connect`, donde se ingresa el *código de conexión*.
+- **API login/register**: middleware `tenant.code` (header `X-Store-Code` o `connection_code`).
+- **API autenticada**: `JwtMiddleware` lee el claim `store` del JWT y activa la tienda antes de `JWTAuth::authenticate()`.
+- **Webhook**: `WebhookController` resuelve la tienda por `meli_user_id` (`activateByMeliUserId`, usando `store_meli_accounts` en landlord).
+- **Jobs**: `AppServiceProvider::makeQueueTenantAware()` agrega `store_id` al payload de cada job y reactiva la tienda en `JobProcessing`. Despachar siempre con una tienda activa.
+- **Comandos de sync**: heredan de `AccountJobCommand`, que itera `TenantManager::eachActiveStore()` y cada cuenta activa; aceptan `--store=` y `--account=`.
+
+Modelos landlord (`Store`, `StoreMeliAccount`) declaran `protected $connection = 'landlord'`. Las migraciones de tienda van en `database/migrations/tenant/` (no en `database/migrations/`).
+
+Settings: `App\Enums\SettingKey` define cada clave; `isAccountScoped()` decide si se guarda por cuenta (`AccountSettingRepository`) o por tienda (`StoreSettingRepository`). Valores por defecto en `config/store_defaults.php`.
+
+Catálogo externo: `ExternalCatalogRepositoryInterface` → `MongoCatalogRepository` (conexión `mongodb`, `MONGODB_URI`). En tests se reemplaza por `tests/Fakes/FakeCatalogRepository`.
 
 ---
 
@@ -92,7 +121,7 @@ app/
 
 **Conexión**: MySQL 8 (NO SQLite en producción)
 
-### Orden de migraciones (respetar FK dependencies):
+### Orden de migraciones de tienda (`database/migrations/tenant/`, respetar FK dependencies):
 1. `users`
 2. `roles`
 3. `user_roles`
@@ -123,15 +152,28 @@ php artisan sync:orders         # cada 10 min
 php artisan sync:customers      # cada hora
 php artisan calculate:statistics # cada hora
 
-# Setup inicial
-php artisan migrate --seed
+# Además: meli:refresh-tokens, sync:questions, sync:post-sale-messages,
+# sync:product-statuses, sync:reputation, sync:dollar (ver routes/console.php)
+# Todos aceptan --store=<id> (y la mayoría --account=<id>)
+
+# Setup inicial (multi-tienda)
 php artisan jwt:secret
+php artisan tenancy:install                 # migraciones de la BD central (landlord)
+php artisan store:create "Mi Tienda" --admin-email=admin@x.com   # crea BD, migra, siembra roles/categorías y admin
+php artisan tenants:migrate [--store=ID] [--fresh --force]       # migra database/migrations/tenant en cada tienda
+php artisan settings:defaults [--store=ID]
 php artisan storage:link
 php artisan queue:work --queue=default
 
+# Docker (app + nginx + mysql; workers con perfil)
+docker compose up -d                        # entrypoint corre tenancy:install y tenants:migrate
+docker compose --profile workers up -d      # + queue y scheduler
+# App en :8000, MySQL expuesto en :3307. docker/mysql/init otorga permisos para crear BDs meli_store_*
+
 # Desarrollo
-php artisan serve
-php artisan queue:listen
+composer dev        # serve + queue:listen + pail + vite en paralelo
+composer setup      # instalación inicial completa
+./vendor/bin/pint   # formateo/lint (Laravel Pint)
 ```
 
 ---
@@ -147,8 +189,11 @@ php artisan vendor:publish --provider="Tymon\JWTAuth\Providers\LaravelServicePro
 php artisan vendor:publish --provider="L5Swagger\L5SwaggerServiceProvider"
 
 # Tests
-php artisan test
+composer test                                   # config:clear + php artisan test
 php artisan test --coverage --min=80
+php artisan test --filter=TenancyTest           # una clase
+php artisan test --filter=test_valid_code_selects_store_and_shows_login
+php artisan test tests/Feature/Migrated/PricingTest.php
 ```
 
 ---
@@ -233,13 +278,16 @@ GET    /api/reports/export/sales
 - **Cobertura mínima**: 80%
 - **Regla**: Mockear siempre la API de Mercado Libre. Nunca hacer calls reales en tests.
 - **Factories**: Usar factories para todos los datos de prueba. Nunca hardcodear.
+- **BD de tests**: `tests/TestCase.php` redirige `tenant` y `landlord` a **un mismo SQLite en memoria** (comparten PDO), desactiva `tenancy.switch_connection` y migra ambas rutas (`database/migrations` + `database/migrations/tenant`). Por eso las migraciones deben ser compatibles con SQLite aunque producción sea MySQL. Queue en `sync`.
+- `setUp()` ya crea y activa una tienda (`TEST-CODE`), la pone en sesión, siembra roles y registra el catálogo fake. Usar los helpers `createAdmin()`, `createOperator()`, `adminWithAccount()`, `operatorWithAccount()`, `setSettings()` y `authHeaders($user)` (JWT).
+- Mockear MeLi con `Http::fake()`.
 
 ---
 
 ## Notas Importantes
 
 - **Laravel 12 vs 13**: El proyecto corre Laravel 12.x. La API es idéntica a L13 — no requiere cambios.
-- **No SQLite**: El `.env` local tiene SQLite por defecto pero MySQL 8 es requerido para producción.
+- **No SQLite en runtime**: MySQL 8 es requerido (cada tienda es una BD MySQL creada por `store:create`). SQLite solo se usa en memoria en los tests.
 - **Queue**: Siempre `QUEUE_CONNECTION=database`. No Redis.
 - **Pagination**: 20 registros por página en todos los listados.
 - **Locale**: `es_CO` para formatos de fecha. Moneda COP sin símbolo de dólar.
