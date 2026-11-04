@@ -815,6 +815,7 @@
                 <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
             </button>
         </form>
+        <div class="px-3 pt-1" style="font-size:11px;color:var(--text-faint);">v{{ config('app.version') }}</div>
     </div>
 
 </nav>

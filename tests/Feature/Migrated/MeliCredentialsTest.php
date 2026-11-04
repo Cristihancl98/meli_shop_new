@@ -92,6 +92,25 @@ class MeliCredentialsTest extends TestCase
         $this->assertStringStartsWith('https://auth.mercadolibre.com.co/authorization?', $location);
         $this->assertStringContainsString('client_id=1234567890', $location);
         $this->assertStringContainsString('redirect_uri=' . urlencode('https://tienda.test/meli/callback'), $location);
+        $this->assertStringContainsString('code_challenge_method=S256', $location);
+
+        parse_str(parse_url($location, PHP_URL_QUERY), $query);
+        $verifier  = session('meli_code_verifier');
+        $challenge = rtrim(strtr(base64_encode(hash('sha256', $verifier, true)), '+/', '-_'), '=');
+        $this->assertSame($challenge, $query['code_challenge']);
+    }
+
+    public function test_callback_without_code_verifier_asks_to_reconnect(): void
+    {
+        $this->saveCredentials();
+        $this->actingAs($this->createAdmin());
+        Http::fake();
+
+        $this->get('/meli/callback?code=TG-code')
+            ->assertRedirect(route('accounts.index'))
+            ->assertSessionHas('error');
+
+        Http::assertNothingSent();
     }
 
     public function test_callback_exchanges_code_with_store_credentials(): void
@@ -107,13 +126,18 @@ class MeliCredentialsTest extends TestCase
             'api.mercadolibre.com/users/me' => Http::response(['nickname' => 'MI_TIENDA', 'email' => 'tienda@test.co']),
         ]);
 
-        $this->get('/meli/callback?code=TG-code')->assertRedirect(route('accounts.index'));
+        $this->withSession(['meli_code_verifier' => 'verifier-123'])
+            ->get('/meli/callback?code=TG-code')
+            ->assertRedirect(route('accounts.index'))
+            ->assertSessionHas('success');
 
         Http::assertSent(fn ($request) => $request->url() === 'https://api.mercadolibre.com/oauth/token'
             && $request['client_id'] === '1234567890'
             && $request['client_secret'] === 'store-secret'
             && $request['redirect_uri'] === 'https://tienda.test/meli/callback'
-            && $request['code'] === 'TG-code');
+            && $request['code'] === 'TG-code'
+            && $request['code_verifier'] === 'verifier-123'
+            && $request->isForm());
 
         $this->assertDatabaseHas('mercadolibre_accounts', ['user_id' => $admin->id, 'meli_user_id' => '777', 'nickname' => 'MI_TIENDA']);
     }
@@ -139,6 +163,7 @@ class MeliCredentialsTest extends TestCase
         $this->actingAs($this->createAdmin())->get('/settings')
             ->assertOk()
             ->assertSee('Aplicación de Mercado Libre')
+            ->assertSee('v' . config('app.version'))
             ->assertSee('1234567890')
             ->assertDontSee('store-secret');
 

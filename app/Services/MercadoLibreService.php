@@ -12,6 +12,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class MercadoLibreService
 {
@@ -30,14 +31,21 @@ class MercadoLibreService
     // OAuth2
     // -----------------------------------------------------------------------
 
-    public function getAuthorizationUrl(): string
+    public function generateCodeVerifier(): string
+    {
+        return Str::random(64);
+    }
+
+    public function getAuthorizationUrl(string $codeVerifier): string
     {
         $credentials = $this->credentials();
 
         $params = http_build_query([
-            'response_type' => 'code',
-            'client_id'     => $credentials->clientId,
-            'redirect_uri'  => $credentials->redirectUri,
+            'response_type'         => 'code',
+            'client_id'             => $credentials->clientId,
+            'redirect_uri'          => $credentials->redirectUri,
+            'code_challenge'        => $this->codeChallenge($codeVerifier),
+            'code_challenge_method' => 'S256',
         ]);
 
         return config('services.mercadolibre.auth_url') . '?' . $params;
@@ -61,16 +69,22 @@ class MercadoLibreService
         return $credentials;
     }
 
-    public function exchangeCodeForTokens(string $code): array
+    private function codeChallenge(string $codeVerifier): string
+    {
+        return rtrim(strtr(base64_encode(hash('sha256', $codeVerifier, true)), '+/', '-_'), '=');
+    }
+
+    public function exchangeCodeForTokens(string $code, string $codeVerifier): array
     {
         $credentials = $this->credentials();
 
-        $response = Http::post(config('services.mercadolibre.token_url'), [
+        $response = Http::asForm()->post(config('services.mercadolibre.token_url'), [
             'grant_type'    => 'authorization_code',
             'client_id'     => $credentials->clientId,
             'client_secret' => $credentials->clientSecret,
             'code'          => $code,
             'redirect_uri'  => $credentials->redirectUri,
+            'code_verifier' => $codeVerifier,
         ]);
 
         if (!$response->successful()) {
@@ -89,7 +103,7 @@ class MercadoLibreService
     {
         $credentials = $this->credentials();
 
-        $response = Http::post(config('services.mercadolibre.token_url'), [
+        $response = Http::asForm()->post(config('services.mercadolibre.token_url'), [
             'grant_type'    => 'refresh_token',
             'client_id'     => $credentials->clientId,
             'client_secret' => $credentials->clientSecret,

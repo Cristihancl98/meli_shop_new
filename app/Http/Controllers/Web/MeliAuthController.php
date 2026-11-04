@@ -12,6 +12,8 @@ use Illuminate\Http\Request;
 
 class MeliAuthController extends Controller
 {
+    private const CODE_VERIFIER_KEY = 'meli_code_verifier';
+
     public function __construct(
         private readonly MercadoLibreService $meliService,
         private readonly MercadolibreAccountRepositoryInterface $accountRepository
@@ -20,10 +22,15 @@ class MeliAuthController extends Controller
     public function connect(): RedirectResponse
     {
         try {
-            return redirect($this->meliService->getAuthorizationUrl());
+            $codeVerifier = $this->meliService->generateCodeVerifier();
+            $url          = $this->meliService->getAuthorizationUrl($codeVerifier);
         } catch (BusinessRuleException $e) {
             return redirect()->route('settings.edit')->with('error', $e->getMessage());
         }
+
+        session([self::CODE_VERIFIER_KEY => $codeVerifier]);
+
+        return redirect($url);
     }
 
     public function callback(Request $request): RedirectResponse
@@ -40,8 +47,15 @@ class MeliAuthController extends Controller
                 ->with('error', 'Código de autorización no recibido.');
         }
 
+        $codeVerifier = session()->pull(self::CODE_VERIFIER_KEY);
+
+        if (!$codeVerifier) {
+            return redirect()->route('accounts.index')
+                ->with('error', 'La sesión de conexión expiró. Vuelve a pulsar "Conectar con MeLi".');
+        }
+
         try {
-            $tokenData = $this->meliService->exchangeCodeForTokens($code);
+            $tokenData = $this->meliService->exchangeCodeForTokens($code, $codeVerifier);
             $meliUser  = $this->meliService->getUserInfo($tokenData['access_token']);
 
             $account = $this->accountRepository->upsertTokens(auth()->id(), [
