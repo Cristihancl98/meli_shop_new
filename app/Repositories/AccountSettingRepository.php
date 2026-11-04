@@ -23,7 +23,7 @@ class AccountSettingRepository implements AccountSettingRepositoryInterface
 
     public function put(int $accountId, SettingKey $key, mixed $value, ?bool $isEnabled = null, bool $touchValueDate = false): AccountSetting
     {
-        $attributes = ['value' => $key->isJson() ? json_encode($value, JSON_UNESCAPED_UNICODE) : $value];
+        $attributes = ['value' => $key->serialize($value)];
 
         if ($isEnabled !== null) {
             $attributes['is_enabled'] = $isEnabled;

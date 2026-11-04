@@ -2,6 +2,9 @@
 
 namespace App\Enums;
 
+use Illuminate\Contracts\Encryption\DecryptException;
+use Illuminate\Support\Facades\Crypt;
+
 enum SettingKey: string
 {
     case ShippingPrice       = 'shipping_price';
@@ -23,12 +26,18 @@ enum SettingKey: string
     case Reputation          = 'reputation';
     case CurrentDollarPrice  = 'current_dollar_price';
     case OrdersSyncedAt      = 'orders_synced_at';
+    case MeliClientId        = 'meli_client_id';
+    case MeliClientSecret    = 'meli_client_secret';
+    case MeliRedirectUri     = 'meli_redirect_uri';
 
     public function defaultValue(): mixed
     {
         return config("store_defaults.{$this->value}", match ($this) {
             self::ProfitRanges, self::WeightRanges, self::NationalTaxRanges => [],
             self::Reputation, self::OrdersSyncedAt => null,
+            self::MeliClientId     => (string) config('services.mercadolibre.client_id'),
+            self::MeliClientSecret => (string) config('services.mercadolibre.client_secret'),
+            self::MeliRedirectUri  => (string) config('services.mercadolibre.redirect_uri'),
             default => 0,
         });
     }
@@ -43,6 +52,16 @@ enum SettingKey: string
         return in_array($this, [self::Reputation, self::CurrentDollarPrice, self::OrdersSyncedAt], true);
     }
 
+    public function isMeliCredential(): bool
+    {
+        return in_array($this, self::meliCredentialKeys(), true);
+    }
+
+    public function isEncrypted(): bool
+    {
+        return $this === self::MeliClientSecret;
+    }
+
     public function isJson(): bool
     {
         return in_array($this, [self::ProfitRanges, self::WeightRanges, self::NationalTaxRanges], true);
@@ -55,11 +74,30 @@ enum SettingKey: string
         }
 
         return match (true) {
-            $this->isJson()    => json_decode($raw, true) ?? [],
+            $this->isEncrypted() => $this->decrypt($raw),
+            $this->isJson()      => json_decode($raw, true) ?? [],
             $this->isInteger() => (int) $raw,
             $this->isDecimal() => (float) $raw,
             default            => $raw,
         };
+    }
+
+    public function serialize(mixed $value): mixed
+    {
+        return match (true) {
+            $this->isJson()                                          => json_encode($value, JSON_UNESCAPED_UNICODE),
+            $this->isEncrypted() && $value !== null && $value !== '' => Crypt::encryptString((string) $value),
+            default                                                  => $value,
+        };
+    }
+
+    private function decrypt(string $raw): string
+    {
+        try {
+            return Crypt::decryptString($raw);
+        } catch (DecryptException) {
+            return '';
+        }
     }
 
     private function isInteger(): bool
@@ -73,6 +111,11 @@ enum SettingKey: string
             self::ShippingPrice, self::DollarPrice, self::MeliCommission, self::Iva,
             self::LogisticsPrice, self::AmazonCommission, self::CurrentDollarPrice,
         ], true);
+    }
+
+    public static function meliCredentialKeys(): array
+    {
+        return [self::MeliClientId, self::MeliClientSecret, self::MeliRedirectUri];
     }
 
     public static function pricingKeys(): array

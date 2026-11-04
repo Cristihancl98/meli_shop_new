@@ -6,6 +6,7 @@ use App\Events\MeliTokenRefreshed;
 use App\Interfaces\MercadolibreAccountRepositoryInterface;
 use App\Models\MercadolibreAccount;
 use App\Services\MercadoLibreService;
+use App\Services\SettingService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
@@ -31,7 +32,7 @@ class MercadoLibreServiceTest extends TestCase
         Config::set('services.mercadolibre.redirect_uri', 'http://localhost/meli/callback');
 
         $this->accountRepo = Mockery::mock(MercadolibreAccountRepositoryInterface::class);
-        $this->service     = new MercadoLibreService($this->accountRepo);
+        $this->service     = new MercadoLibreService($this->accountRepo, app(SettingService::class));
 
         $this->account = MercadolibreAccount::factory()->create([
             'access_token'  => 'test-access-token',

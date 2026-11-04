@@ -21,7 +21,7 @@ class StoreSettingRepository implements StoreSettingRepositoryInterface
 
     public function put(SettingKey $key, mixed $value, ?bool $isEnabled = null, bool $touchValueDate = false): StoreSetting
     {
-        $attributes = ['value' => $key->isJson() ? json_encode($value, JSON_UNESCAPED_UNICODE) : $value];
+        $attributes = ['value' => $key->serialize($value)];
 
         if ($isEnabled !== null) {
             $attributes['is_enabled'] = $isEnabled;

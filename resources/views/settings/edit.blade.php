@@ -12,6 +12,51 @@
     </div>
 @endif
 
+@if($meli)
+    <div class="glass-card p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="chart-title mb-0"><i class="bi bi-key me-1"></i> Aplicación de Mercado Libre</div>
+            @if($meli['is_complete'])
+                <span class="badge text-bg-success">Configurada</span>
+            @else
+                <span class="badge text-bg-warning">Incompleta</span>
+            @endif
+        </div>
+        <p style="color:var(--text-muted);font-size:13px;">
+            Credenciales de la aplicación creada en developers.mercadolibre.com.co para esta tienda.
+            Se usan para conectar cuentas y renovar sus tokens. En la aplicación registra como Redirect URI:
+            <code>{{ $callbackUrl }}</code> (debe ser HTTPS).
+        </p>
+        <form method="POST" action="{{ route('settings.meli-credentials') }}">
+            @csrf
+            @method('PUT')
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Client ID (App ID)</label>
+                    <input type="text" name="meli_client_id" class="form-control" autocomplete="off"
+                           value="{{ old('meli_client_id', $meli['meli_client_id']) }}">
+                    @error('meli_client_id')<small class="text-danger">{{ $message }}</small>@enderror
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Client Secret</label>
+                    <input type="password" name="meli_client_secret" class="form-control" autocomplete="new-password"
+                           placeholder="{{ $meli['has_client_secret'] ? '•••••••• (guardado, dejar vacío para conservar)' : 'Sin configurar' }}">
+                    @error('meli_client_secret')<small class="text-danger">{{ $message }}</small>@enderror
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Redirect URI</label>
+                    <input type="url" name="meli_redirect_uri" class="form-control" placeholder="{{ $callbackUrl }}"
+                           value="{{ old('meli_redirect_uri', $meli['meli_redirect_uri']) }}">
+                    @error('meli_redirect_uri')<small class="text-danger">{{ $message }}</small>@enderror
+                </div>
+            </div>
+            <div class="d-flex justify-content-end mt-3">
+                <button type="submit" class="btn-neon"><i class="bi bi-save me-1"></i> Guardar credenciales</button>
+            </div>
+        </form>
+    </div>
+@endif
+
 <div class="row g-4 mb-4">
     <div class="col-md-4">
         <div class="metric-card">

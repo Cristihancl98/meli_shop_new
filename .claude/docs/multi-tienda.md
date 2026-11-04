@@ -4,6 +4,22 @@ Un usuario puede conectar **N cuentas de MeLi Colombia** y gestionar cada una de
 
 ---
 
+## Credenciales de la aplicación MeLi (por tienda)
+
+Cada tienda (cliente) usa **su propia aplicación** de developers.mercadolibre.com.co. Las credenciales se guardan en la tabla `settings` de la BD de la tienda:
+
+| Clave (`SettingKey`) | Notas |
+|---|---|
+| `meli_client_id` | App ID numérico |
+| `meli_client_secret` | Cifrado con `Crypt` (APP_KEY); nunca se muestra en la vista |
+| `meli_redirect_uri` | HTTPS; si está vacía se usa `route('meli.callback')` |
+
+- Se editan en **Configuración → Aplicación de Mercado Libre** (solo admin, `PUT /settings/meli-credentials`). Si el secret se deja vacío, se conserva el guardado.
+- `SettingService::meliCredentials()` devuelve un `MeliCredentialsDTO`. Si una clave no tiene valor, se usan `MELI_CLIENT_ID` / `MELI_CLIENT_SECRET` / `MELI_REDIRECT_URI` del `.env` como respaldo global.
+- `MercadoLibreService` las lee **en cada llamada** (authorization URL, intercambio de `code`, refresh). Si están incompletas lanza `BusinessRuleException` y `/meli/connect` redirige a Configuración.
+- El webhook activa la tienda por `user_id` y luego valida `application_id` contra el Client ID **de esa tienda**.
+- `settings:defaults` no siembra estas claves.
+
 ## Flujo de conexión OAuth
 
 ```

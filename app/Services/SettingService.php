@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\DTOs\MeliCredentialsDTO;
 use App\Enums\SettingKey;
 use App\Interfaces\AccountSettingRepositoryInterface;
 use App\Interfaces\StoreSettingRepositoryInterface;
@@ -75,7 +76,7 @@ class SettingService
         $created = 0;
 
         foreach (SettingKey::cases() as $key) {
-            if ($key->isSystemManaged() || $key->isAccountScoped() || in_array($key->value, $stored, true)) {
+            if ($key->isSystemManaged() || $key->isAccountScoped() || $key->isMeliCredential() || in_array($key->value, $stored, true)) {
                 continue;
             }
 
@@ -84,6 +85,43 @@ class SettingService
         }
 
         return $created;
+    }
+
+    public function meliCredentials(): MeliCredentialsDTO
+    {
+        $redirectUri = $this->credential(SettingKey::MeliRedirectUri);
+
+        return new MeliCredentialsDTO(
+            $this->credential(SettingKey::MeliClientId),
+            $this->credential(SettingKey::MeliClientSecret),
+            $redirectUri !== '' ? $redirectUri : route('meli.callback'),
+        );
+    }
+
+    private function credential(SettingKey $key): string
+    {
+        $value = (string) $this->get($key);
+
+        return $value !== '' ? $value : (string) $key->defaultValue();
+    }
+
+    public function updateMeliCredentials(array $values): MeliCredentialsDTO
+    {
+        foreach (SettingKey::meliCredentialKeys() as $key) {
+            if (!array_key_exists($key->value, $values)) {
+                continue;
+            }
+
+            $value = trim((string) $values[$key->value]);
+
+            if ($key === SettingKey::MeliClientSecret && $value === '') {
+                continue;
+            }
+
+            $this->storeSettingRepository->put($key, $value, null, true);
+        }
+
+        return $this->meliCredentials();
     }
 
     public function recordSystemValue(SettingKey $key, mixed $value, ?MercadolibreAccount $account = null): void

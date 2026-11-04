@@ -26,6 +26,7 @@ class SyncJobsTest extends TestCase
     public function test_refresh_token_job_stores_new_tokens(): void
     {
         [, $account] = $this->adminWithAccount();
+        $this->setSettings(['meli_client_id' => '1234567890', 'meli_client_secret' => 'store-secret']);
 
         Http::fake(['api.mercadolibre.com/oauth/token' => Http::response([
             'access_token' => 'APP_USR-new', 'refresh_token' => 'TG-new', 'expires_in' => 21600,

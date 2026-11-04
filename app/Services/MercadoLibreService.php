@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use App\DTOs\MeliCredentialsDTO;
 use App\Events\MeliTokenRefreshed;
+use App\Exceptions\BusinessRuleException;
 use App\Events\SyncFailed;
 use App\Interfaces\MercadolibreAccountRepositoryInterface;
 use App\Models\MercadolibreAccount;
@@ -14,19 +16,14 @@ use Illuminate\Support\Facades\Log;
 class MercadoLibreService
 {
     private string $apiBaseUrl;
-    private string $clientId;
-    private string $clientSecret;
-    private string $redirectUri;
 
     private const RETRY_DELAYS = [1, 3, 10];
 
     public function __construct(
-        private readonly MercadolibreAccountRepositoryInterface $accountRepository
+        private readonly MercadolibreAccountRepositoryInterface $accountRepository,
+        private readonly SettingService $settingService
     ) {
-        $this->apiBaseUrl    = config('services.mercadolibre.api_base_url');
-        $this->clientId      = config('services.mercadolibre.client_id');
-        $this->clientSecret  = config('services.mercadolibre.client_secret');
-        $this->redirectUri   = config('services.mercadolibre.redirect_uri');
+        $this->apiBaseUrl = config('services.mercadolibre.api_base_url');
     }
 
     // -----------------------------------------------------------------------
@@ -35,23 +32,45 @@ class MercadoLibreService
 
     public function getAuthorizationUrl(): string
     {
+        $credentials = $this->credentials();
+
         $params = http_build_query([
             'response_type' => 'code',
-            'client_id'     => $this->clientId,
-            'redirect_uri'  => $this->redirectUri,
+            'client_id'     => $credentials->clientId,
+            'redirect_uri'  => $credentials->redirectUri,
         ]);
 
         return config('services.mercadolibre.auth_url') . '?' . $params;
     }
 
+    public function belongsToApplication(string $applicationId): bool
+    {
+        $clientId = $this->settingService->meliCredentials()->clientId;
+
+        return $clientId === '' || $applicationId === $clientId;
+    }
+
+    private function credentials(): MeliCredentialsDTO
+    {
+        $credentials = $this->settingService->meliCredentials();
+
+        if (!$credentials->isComplete()) {
+            throw new BusinessRuleException('Configura el Client ID, el Client Secret y la Redirect URI de Mercado Libre en Configuración antes de conectar una cuenta.');
+        }
+
+        return $credentials;
+    }
+
     public function exchangeCodeForTokens(string $code): array
     {
+        $credentials = $this->credentials();
+
         $response = Http::post(config('services.mercadolibre.token_url'), [
             'grant_type'    => 'authorization_code',
-            'client_id'     => $this->clientId,
-            'client_secret' => $this->clientSecret,
+            'client_id'     => $credentials->clientId,
+            'client_secret' => $credentials->clientSecret,
             'code'          => $code,
-            'redirect_uri'  => $this->redirectUri,
+            'redirect_uri'  => $credentials->redirectUri,
         ]);
 
         if (!$response->successful()) {
@@ -68,10 +87,12 @@ class MercadoLibreService
 
     public function refreshAccessToken(MercadolibreAccount $account): MercadolibreAccount
     {
+        $credentials = $this->credentials();
+
         $response = Http::post(config('services.mercadolibre.token_url'), [
             'grant_type'    => 'refresh_token',
-            'client_id'     => $this->clientId,
-            'client_secret' => $this->clientSecret,
+            'client_id'     => $credentials->clientId,
+            'client_secret' => $credentials->clientSecret,
             'refresh_token' => $account->refresh_token,
         ]);
 

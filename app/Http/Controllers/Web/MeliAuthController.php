@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Web;
 
+use App\Exceptions\BusinessRuleException;
 use App\Http\Controllers\Controller;
 use App\Interfaces\MercadolibreAccountRepositoryInterface;
 use App\Services\MercadoLibreService;
@@ -18,7 +19,11 @@ class MeliAuthController extends Controller
 
     public function connect(): RedirectResponse
     {
-        return redirect($this->meliService->getAuthorizationUrl());
+        try {
+            return redirect($this->meliService->getAuthorizationUrl());
+        } catch (BusinessRuleException $e) {
+            return redirect()->route('settings.edit')->with('error', $e->getMessage());
+        }
     }
 
     public function callback(Request $request): RedirectResponse

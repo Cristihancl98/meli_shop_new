@@ -59,6 +59,7 @@ Route::middleware('web.auth')->group(function () {
     // Configuración (migrado de Configuraciones)
     Route::get('settings', [SettingController::class, 'edit'])->name('settings.edit');
     Route::put('settings', [SettingController::class, 'update'])->name('settings.update');
+    Route::put('settings/meli-credentials', [SettingController::class, 'updateMeliCredentials'])->name('settings.meli-credentials');
 
     // Preguntas y posventa (migrado de Preguntas)
     Route::get('questions', [QuestionController::class, 'index'])->name('questions.index');
