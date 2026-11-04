@@ -163,7 +163,7 @@ class MeliCredentialsTest extends TestCase
         $this->actingAs($this->createAdmin())->get('/settings')
             ->assertOk()
             ->assertSee('Aplicación de Mercado Libre')
-            ->assertSee('v' . config('app.version'))
+            ->assertSee('v' . trim(file_get_contents(base_path('VERSION'))))
             ->assertSee('1234567890')
             ->assertDontSee('store-secret');
 

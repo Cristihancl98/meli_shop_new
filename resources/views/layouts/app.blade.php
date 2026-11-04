@@ -122,7 +122,8 @@
         /* ═══ SIDEBAR ═══ */
         #sidebar {
             width: var(--sidebar-w);
-            min-height: 100vh;
+            height: 100vh;
+            height: 100dvh;
             background: var(--dark-sidebar);
             border-right: 1px solid var(--border-glow);
             position: fixed;
@@ -268,6 +269,17 @@
             color: var(--neon-blue);
             font-weight: 600;
         }
+
+        /* Nav con scroll propio: marca y pie quedan fijos en pantallas bajas */
+        .sidebar-nav {
+            min-height: 0;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            scrollbar-width: thin;
+            scrollbar-color: var(--border-glow) transparent;
+        }
+        .sidebar-nav::-webkit-scrollbar { width: 6px; }
+        .sidebar-nav::-webkit-scrollbar-thumb { background: var(--border-glow); border-radius: 3px; }
 
         /* Sidebar footer */
         .sidebar-footer {
@@ -698,7 +710,7 @@
     </div>
 
     {{-- Nav --}}
-    <div class="flex-fill overflow-auto py-2">
+    <div class="sidebar-nav flex-fill py-2">
 
         <div class="nav-section">Principal</div>
         <a href="{{ route('dashboard') }}" class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
@@ -815,7 +827,7 @@
                 <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
             </button>
         </form>
-        <div class="px-3 pt-1" style="font-size:11px;color:var(--text-faint);">v{{ config('app.version') }}</div>
+        <div class="px-3 pt-1" style="font-size:11px;color:var(--text-faint);">v{{ $appVersion }}</div>
     </div>
 
 </nav>

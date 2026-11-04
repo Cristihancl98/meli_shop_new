@@ -26,6 +26,7 @@ use App\Repositories\StoreRepository;
 use App\Repositories\StoreSettingRepository;
 use App\Services\TenantManager;
 use Illuminate\Queue\Events\JobProcessing;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
 use App\Repositories\UserRepository;
@@ -80,6 +81,11 @@ class AppServiceProvider extends ServiceProvider
 
         Gate::define('view-report',   [\App\Policies\ReportPolicy::class, 'view']);
         Gate::define('export-report', [\App\Policies\ReportPolicy::class, 'export']);
+        View::composer('layouts.app', fn ($view) => $view->with(
+            'appVersion',
+            trim((string) @file_get_contents(base_path('VERSION'))) ?: 'dev'
+        ));
+
         Gate::define('view-settings',   [\App\Policies\SettingPolicy::class, 'view']);
         Gate::define('update-settings', [\App\Policies\SettingPolicy::class, 'update']);
     }

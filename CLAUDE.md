@@ -37,7 +37,7 @@ Catálogo externo: `ExternalCatalogRepositoryInterface` → `MongoCatalogReposit
 
 ## Versión visible (OBLIGATORIO en cada cambio)
 
-El archivo `VERSION` (raíz de `meli/`) se muestra en el pie del menú lateral (`config('app.version')`) para comprobar si la web ya tiene los cambios. **Cada vez que se modifique código, subir la versión** (semver): PATCH para correcciones, MINOR para funcionalidades nuevas, MAJOR para cambios incompatibles. Si se activa `config:cache`, hay que regenerarlo para ver el nuevo número.
+El archivo `VERSION` (raíz de `meli/`) se muestra en el pie del menú lateral (`$appVersion`, compartido por un view composer en `AppServiceProvider` que lee el archivo en cada petición, así no depende de `config:cache`) para comprobar si la web ya tiene los cambios. **Cada vez que se modifique código, subir la versión** (semver): PATCH para correcciones, MINOR para funcionalidades nuevas, MAJOR para cambios incompatibles.
 
 ---
 
