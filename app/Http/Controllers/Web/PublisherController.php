@@ -7,6 +7,7 @@ use App\Exceptions\BusinessRuleException;
 use App\Exceptions\ScrapingInProgressException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\BulkPublish\ListBulkCodesRequest;
+use App\Http\Requests\Meli\CategoryLevelRequest;
 use App\Http\Requests\Pricing\CalculatePriceRequest;
 use App\Http\Requests\BulkPublish\StoreBulkCodesRequest;
 use App\Http\Requests\Product\PublishProductRequest;
@@ -14,6 +15,7 @@ use App\Http\Requests\Product\ScrapingStatusRequest;
 use App\Models\Product;
 use App\Services\BulkPublishService;
 use App\Services\CatalogService;
+use App\Services\MeliCategoryService;
 use App\Services\PricingService;
 use App\Traits\ApiResponses;
 use App\Services\ProductPublishingService;
@@ -31,7 +33,8 @@ class PublisherController extends Controller
         private readonly ProductPublishingService $publishingService,
         private readonly CatalogService $catalogService,
         private readonly BulkPublishService $bulkPublishService,
-        private readonly PricingService $pricingService
+        private readonly PricingService $pricingService,
+        private readonly MeliCategoryService $categoryService
     ) {}
 
     public function price(CalculatePriceRequest $request): JsonResponse
@@ -70,6 +73,19 @@ class PublisherController extends Controller
         }
 
         return view('publisher.create', compact('account', 'sku', 'lookup', 'lookupError', 'suggestedCategory', 'scraping'));
+    }
+
+    public function categories(CategoryLevelRequest $request): JsonResponse
+    {
+        $this->authorize('publish', Product::class);
+
+        if (!$account = $this->currentAccount()) {
+            return $this->fail('Vincula una cuenta de Mercado Libre para consultar categorías.', 422);
+        }
+
+        $level = $this->categoryService->level($account, $request->validated('category_id'));
+
+        return $this->ok($level->toArray(), 'Categorías obtenidas.');
     }
 
     public function scrapingStatus(ScrapingStatusRequest $request): JsonResponse

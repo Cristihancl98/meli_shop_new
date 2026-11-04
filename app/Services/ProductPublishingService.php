@@ -66,14 +66,20 @@ class ProductPublishingService
     {
         $this->ensureSkuIsFree($account, $dto->sku);
 
-        $payload = $dto->toMeliPayload(
+        $payload = fn (bool $asUserProduct) => $dto->toMeliPayload(
             config('services.mercadolibre.country_code'),
             (string) $this->settingService->get(SettingKey::ListingType),
             (int) $this->settingService->get(SettingKey::ManufacturingDays),
             (int) $this->settingService->get(SettingKey::WarrantyDays),
+            $asUserProduct,
         );
 
-        $meliItem = $this->meliService->createProduct($account, $payload);
+        $meliItem = $this->meliService->createProduct($account, $payload(false));
+
+        if (!isset($meliItem['id']) && $this->requiresFamilyName($meliItem)) {
+            Log::info('MeLi exige family_name (User Products); se reintenta la publicación', ['sku' => $dto->sku]);
+            $meliItem = $this->meliService->createProduct($account, $payload(true));
+        }
 
         if (!isset($meliItem['id'])) {
             throw MeliApiException::fromResponse('publicar producto', $meliItem);
@@ -98,7 +104,7 @@ class ProductPublishingService
             'stock'                   => $dto->quantity,
             'status'                  => 'active',
             'condition'               => 'new',
-            'listing_type_id'         => $payload['listing_type_id'],
+            'listing_type_id'         => $payload(false)['listing_type_id'],
             'thumbnail'               => $dto->pictures[0] ?? null,
             'permalink'               => $meliItem['permalink'] ?? null,
             'published_by'            => $publisher->id,
@@ -232,6 +238,16 @@ class ProductPublishingService
         }
 
         return $product ?? throw new ScrapingInProgressException($sku);
+    }
+
+    private function requiresFamilyName(array $meliResponse): bool
+    {
+        $messages = array_merge(
+            [(string) ($meliResponse['message'] ?? '')],
+            array_map(fn ($cause) => is_array($cause) ? (string) ($cause['message'] ?? '') : (string) $cause, (array) ($meliResponse['cause'] ?? []))
+        );
+
+        return str_contains(implode(' ', $messages), 'family_name');
     }
 
     private function ensureSkuIsFree(MercadolibreAccount $account, string $sku): void

@@ -83,6 +83,50 @@ class ProductPublishingControllerTest extends TestCase
         $this->assertNotNull(\App\Models\Product::where('meli_item_id', 'MCO900')->value('published_at'));
     }
 
+    public function test_publish_retries_with_family_name_for_user_products_sellers(): void
+    {
+        [$admin] = $this->adminWithAccount();
+
+        Http::fake([
+            'api.mercadolibre.com/items/MCO901/description' => Http::response(['text' => 'ok']),
+            'api.mercadolibre.com/items' => Http::sequence()
+                ->push([
+                    'message' => 'body.required_fields',
+                    'error'   => 'validation_error',
+                    'status'  => 400,
+                    'cause'   => [[
+                        'department' => 'items', 'cause_id' => 369, 'type' => 'error', 'code' => 'body.required_fields', 'references' => ['body'],
+                        'message'    => 'The body does not contains some or none of the following properties [family_name]',
+                    ]],
+                ], 400)
+                ->push(['id' => 'MCO901', 'permalink' => 'https://meli.test/MCO901'], 201),
+        ]);
+
+        $this->postJson('/api/products/publish', $this->publishPayload(), $this->authHeaders($admin))
+            ->assertCreated()
+            ->assertJsonPath('data.meli_item_id', 'MCO901');
+
+        $itemRequests = Http::recorded(fn (Request $request) => $request->url() === 'https://api.mercadolibre.com/items')
+            ->map(fn ($pair) => $pair[0]->data());
+
+        $this->assertCount(2, $itemRequests);
+        $this->assertArrayHasKey('title', $itemRequests[0]);
+        $this->assertArrayNotHasKey('family_name', $itemRequests[0]);
+        $this->assertSame($itemRequests[0]['title'], $itemRequests[1]['family_name']);
+        $this->assertArrayNotHasKey('title', $itemRequests[1]);
+        $this->assertSame($itemRequests[0]['attributes'], $itemRequests[1]['attributes']);
+    }
+
+    public function test_publish_does_not_retry_other_validation_errors(): void
+    {
+        [$admin] = $this->adminWithAccount();
+        Http::fake(['api.mercadolibre.com/items' => Http::response(['message' => 'validation_error', 'cause' => [['message' => 'The attributes [GTIN] are required']]], 400)]);
+
+        $this->postJson('/api/products/publish', $this->publishPayload(), $this->authHeaders($admin))->assertStatus(502);
+
+        Http::assertSentCount(1);
+    }
+
     public function test_publish_returns_502_when_meli_rejects(): void
     {
         [$admin] = $this->adminWithAccount();

@@ -89,12 +89,14 @@ final class PublishProductDTO
         return $attributes;
     }
 
-    public function toMeliPayload(string $siteId, string $listingType, int $manufacturingDays, int $warrantyDays): array
+    public function toMeliPayload(string $siteId, string $listingType, int $manufacturingDays, int $warrantyDays, bool $asUserProduct = false): array
     {
+        $name = $asUserProduct ? ['family_name' => $this->title] : ['title' => $this->title];
+
         return [
             'site_id'            => $siteId,
             'category_id'        => $this->meliCategoryId,
-            'title'              => $this->title,
+            ...$name,
             'price'              => round($this->finalPrice),
             'currency_id'        => 'COP',
             'available_quantity' => $this->quantity,

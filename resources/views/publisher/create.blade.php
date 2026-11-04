@@ -56,8 +56,15 @@
                         @endif
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label">Categoría MeLi</label>
-                        <input type="text" name="meli_category_id" class="form-control" value="{{ old('meli_category_id', $suggestedCategory) }}" placeholder="MCO1234" required>
+                        <label class="form-label" for="category-id">Categoría MeLi</label>
+                        <div class="d-flex gap-2">
+                            <input type="text" name="meli_category_id" id="category-id" class="form-control" value="{{ old('meli_category_id', $suggestedCategory) }}" placeholder="MCO1234" required>
+                            <button type="button" id="category-open" class="btn-ghost d-inline-flex align-items-center text-decoration-none" style="padding:0 12px;"
+                                    data-url="{{ route('publisher.categories') }}" title="Elegir categoría de Mercado Libre" aria-label="Elegir categoría de Mercado Libre" @disabled(!$account)>
+                                <i class="bi bi-diagram-3"></i>
+                            </button>
+                        </div>
+                        <small id="category-path" class="d-block" style="color:var(--text-dim);font-size:11px;"></small>
                         @if($lookup['categoria_meli'])
                             <small style="color:var(--neon-green);font-size:11px;">Categoría del catálogo</small>
                         @elseif($suggestedCategory)
@@ -184,6 +191,30 @@
     </div>
 @endif
 
+<div class="modal fade" id="category-modal" tabindex="-1" aria-labelledby="category-modal-title" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+        <div class="modal-content glass-card border-0">
+            <div class="modal-header border-0 pb-0">
+                <h6 class="modal-title" id="category-modal-title" style="color:var(--text-strong);"><i class="bi bi-diagram-3 me-1"></i> Categoría de Mercado Libre</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="px-3 pt-2">
+                <nav id="category-breadcrumb" class="d-flex flex-wrap align-items-center gap-1 mb-2" style="font-size:12px;"></nav>
+                <input type="search" id="category-filter" class="form-control form-control-sm" placeholder="Filtrar este nivel…" autocomplete="off">
+            </div>
+            <div class="modal-body pt-2">
+                <div id="category-selected" class="d-none flash-alert mb-2" style="background:var(--hover-bg);border:1px solid var(--border-glow);color:var(--text-dim);">
+                    <i class="bi bi-check2-circle" style="color:var(--neon-green);"></i>
+                    <span><strong id="category-selected-name"></strong> <code id="category-selected-id"></code> es una categoría final.</span>
+                    <button type="button" id="category-use" class="btn-neon ms-auto" style="padding:4px 14px;">Usar esta categoría</button>
+                </div>
+                <div id="category-message" class="text-center py-4 d-none" style="color:var(--text-muted);font-size:13px;"></div>
+                <div id="category-list" class="list-group list-group-flush"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="modal fade" id="loading-modal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="loading-modal-title" aria-hidden="true"
      @if($scraping) data-scraping-url="{{ route('publisher.scraping-status', ['sku' => $sku]) }}" @endif>
     <div class="modal-dialog modal-dialog-centered">
@@ -204,6 +235,115 @@
 
 @push('scripts')
 <script>
+(function () {
+    const openButton = document.getElementById('category-open');
+    if (!openButton) return;
+
+    const input       = document.getElementById('category-id');
+    const pathLabel   = document.getElementById('category-path');
+    const modal       = bootstrap.Modal.getOrCreateInstance(document.getElementById('category-modal'));
+    const breadcrumb  = document.getElementById('category-breadcrumb');
+    const filter      = document.getElementById('category-filter');
+    const list        = document.getElementById('category-list');
+    const message     = document.getElementById('category-message');
+    const selected    = document.getElementById('category-selected');
+    const url         = openButton.dataset.url;
+    let current       = null;
+
+    const fetchLevel = async (categoryId) => (await axios.get(url, { params: categoryId ? { category_id: categoryId } : {} })).data.data;
+
+    const pathText = (level) => [...level.path.map((node) => node.name)].join(' › ');
+
+    const showMessage = (text) => {
+        message.textContent = text;
+        message.classList.toggle('d-none', !text);
+    };
+
+    const crumb = (label, categoryId, active) => {
+        const element = document.createElement(active ? 'span' : 'button');
+        element.textContent = label;
+        element.style.color = active ? 'var(--text-strong)' : 'var(--neon-blue)';
+        if (!active) {
+            element.type = 'button';
+            element.className = 'btn btn-link p-0 border-0 text-decoration-none';
+            element.style.fontSize = '12px';
+            element.addEventListener('click', () => load(categoryId));
+        }
+        return element;
+    };
+
+    const render = (level) => {
+        current = level;
+        filter.value = '';
+
+        breadcrumb.replaceChildren(crumb('Todas', null, level.id === null));
+        level.path.forEach((node, index) => {
+            const separator = document.createElement('span');
+            separator.textContent = '›';
+            separator.style.color = 'var(--text-faint)';
+            breadcrumb.append(separator, crumb(node.name, node.id, index === level.path.length - 1));
+        });
+
+        selected.classList.toggle('d-none', !level.is_leaf);
+        if (level.is_leaf) {
+            document.getElementById('category-selected-name').textContent = level.name;
+            document.getElementById('category-selected-id').textContent = level.id;
+        }
+
+        list.replaceChildren(...level.children.map((child) => {
+            const item = document.createElement('button');
+            item.type = 'button';
+            item.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center';
+            item.style.cssText = 'background:transparent;color:var(--text-dim);border-color:var(--border-glow);font-size:13px;';
+            item.dataset.name = child.name.toLowerCase();
+            item.innerHTML = '<span></span><i class="bi bi-chevron-right" style="color:var(--text-faint);"></i>';
+            item.firstElementChild.textContent = child.name;
+            item.addEventListener('click', () => load(child.id));
+            return item;
+        }));
+
+        showMessage('');
+        filter.classList.toggle('d-none', level.children.length === 0);
+    };
+
+    const load = async (categoryId) => {
+        list.replaceChildren();
+        selected.classList.add('d-none');
+        showMessage('Cargando categorías…');
+
+        try {
+            render(await fetchLevel(categoryId));
+        } catch (error) {
+            if (categoryId && error.response?.status === 422) {
+                return load(null);
+            }
+            showMessage(error.response?.data?.message ?? 'No fue posible consultar las categorías de Mercado Libre.');
+        }
+    };
+
+    filter.addEventListener('input', () => {
+        const term = filter.value.trim().toLowerCase();
+        list.querySelectorAll('[data-name]').forEach((item) => item.classList.toggle('d-none', !item.dataset.name.includes(term)));
+    });
+
+    document.getElementById('category-use').addEventListener('click', () => {
+        input.value = current.id;
+        pathLabel.textContent = pathText(current);
+        modal.hide();
+    });
+
+    openButton.addEventListener('click', () => {
+        modal.show();
+        load(input.value.trim() || null);
+    });
+
+    input.addEventListener('change', () => { pathLabel.textContent = ''; });
+
+    if (input.value.trim()) {
+        fetchLevel(input.value.trim()).then((level) => { pathLabel.textContent = pathText(level); }).catch(() => {});
+    }
+})();
+
 (function () {
     const modalElement = document.getElementById('loading-modal');
     const modal        = bootstrap.Modal.getOrCreateInstance(modalElement);
