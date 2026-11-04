@@ -233,6 +233,46 @@ class WebPagesTest extends TestCase
         ])->assertRedirect(route('publisher.create'))->assertSessionHasErrors('general');
     }
 
+    public function test_publisher_store_shows_full_meli_error_detail(): void
+    {
+        [$admin] = $this->adminWithAccount();
+        Http::fake(['api.mercadolibre.com/items' => Http::response([
+            'message' => 'Validation error',
+            'error'   => 'validation_error',
+            'status'  => 400,
+            'cause'   => [
+                ['type' => 'error', 'code' => 'item.attributes.missing_required', 'references' => ['item.attributes'], 'message' => 'The attributes [GTIN] are required for category MCO1.'],
+                ['type' => 'warning', 'code' => 'item.title.length', 'references' => [], 'message' => 'Title is too short.'],
+            ],
+        ], 400)]);
+
+        $this->actingAs($admin)->from(route('publisher.create'))->followingRedirects()->post(route('publisher.store'), [
+            'sku' => 'B0ERR', 'title' => 'X', 'meli_category_id' => 'MCO1', 'final_price' => 1000,
+            'base_price' => 1, 'quantity' => 1, 'weight' => 1, 'brand' => 'X', 'pictures' => 'https://img.test/a.jpg',
+        ])
+            ->assertOk()
+            ->assertSee('Detalle de Mercado Libre')
+            ->assertSee('HTTP 400')
+            ->assertSee('validation_error')
+            ->assertSee('The attributes [GTIN] are required for category MCO1.')
+            ->assertSee('item.attributes.missing_required')
+            ->assertSee('Title is too short.')
+            ->assertSee('Ver respuesta completa (JSON)')
+            ->assertSee('&quot;cause&quot;', false);
+    }
+
+    public function test_publisher_store_handles_non_json_meli_error(): void
+    {
+        [$admin] = $this->adminWithAccount();
+        Http::fake(['api.mercadolibre.com/items' => Http::response('<html>Bad Gateway</html>', 502)]);
+
+        $this->actingAs($admin)->from(route('publisher.create'))->post(route('publisher.store'), [
+            'sku' => 'B0ERR', 'title' => 'X', 'meli_category_id' => 'MCO1', 'final_price' => 1000,
+            'base_price' => 1, 'quantity' => 1, 'weight' => 1, 'brand' => 'X', 'pictures' => 'https://img.test/a.jpg',
+        ])->assertRedirect(route('publisher.create'))
+            ->assertSessionHas('meli_error', fn ($error) => $error['status'] === 502 && str_contains($error['message'], 'Bad Gateway'));
+    }
+
     public function test_codes_form_registers_codes(): void
     {
         [$admin, $account] = $this->adminWithAccount();

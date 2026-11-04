@@ -161,14 +161,14 @@ class MercadoLibreService
     {
         $response = $this->request($account, 'POST', '/items', [], $data);
 
-        return $response->json();
+        return $this->jsonOrError($response);
     }
 
     public function updateProduct(MercadolibreAccount $account, string $itemId, array $data): array
     {
         $response = $this->request($account, 'PUT', "/items/{$itemId}", [], $data);
 
-        return $response->json();
+        return $this->jsonOrError($response);
     }
 
     // -----------------------------------------------------------------------
@@ -427,6 +427,15 @@ class MercadoLibreService
         }
 
         return $response;
+    }
+
+    private function jsonOrError(Response $response): array
+    {
+        return $response->json() ?? [
+            'status'  => $response->status(),
+            'error'   => 'invalid_response',
+            'message' => 'Mercado Libre respondió HTTP ' . $response->status() . ': ' . mb_substr($response->body(), 0, 500),
+        ];
     }
 
     private function ensureFreshToken(MercadolibreAccount $account): MercadolibreAccount

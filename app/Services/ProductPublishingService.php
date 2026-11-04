@@ -4,10 +4,12 @@ namespace App\Services;
 
 use App\DTOs\PublishProductDTO;
 use App\DTOs\UpdateListingDTO;
+use App\Enums\ScrapingStatus;
 use App\Enums\SettingKey;
 use App\Events\ProductSynced;
 use App\Exceptions\BusinessRuleException;
 use App\Exceptions\MeliApiException;
+use App\Exceptions\ScrapingInProgressException;
 use App\Interfaces\ProductRepositoryInterface;
 use App\Models\MercadolibreAccount;
 use App\Models\Product;
@@ -25,13 +27,17 @@ class ProductPublishingService
         private readonly SettingService $settingService
     ) {}
 
-    public function lookupSku(?MercadolibreAccount $account, string $sku): array
+    public function lookupSku(?MercadolibreAccount $account, string $sku, bool $scrapeInBackground = false): array
     {
         if ($account) {
             $this->ensureSkuIsFree($account, $sku);
         }
 
-        $product = $this->catalogService->findProductBySku($sku);
+        $product = $this->catalogService->findProductBySku($sku, !$scrapeInBackground);
+
+        if (!$product && $scrapeInBackground && $this->catalogService->scrapingEnabled()) {
+            $product = $this->scrapeInBackground($sku);
+        }
 
         if (!$product) {
             throw new BusinessRuleException('No se encontró el producto en el catálogo.');
@@ -202,6 +208,30 @@ class ProductPublishingService
         Log::warning('No se pudo publicar la descripción en MeLi', ['item' => $itemId, 'response' => $response]);
 
         return false;
+    }
+
+    public function scrapingStatus(string $sku): ScrapingStatus
+    {
+        return $this->catalogService->scrapingStatus($sku);
+    }
+
+    private function scrapeInBackground(string $sku): array
+    {
+        if ($this->catalogService->scrapingStatus($sku) === ScrapingStatus::Failed) {
+            $this->catalogService->forgetScraping($sku);
+
+            throw new BusinessRuleException('No fue posible obtener el producto desde Amazon. Verifica el SKU o inténtalo de nuevo.');
+        }
+
+        $this->catalogService->startScraping($sku);
+
+        $product = $this->catalogService->findProductBySku($sku, false);
+
+        if (!$product && $this->catalogService->scrapingStatus($sku) === ScrapingStatus::Failed) {
+            return $this->scrapeInBackground($sku);
+        }
+
+        return $product ?? throw new ScrapingInProgressException($sku);
     }
 
     private function ensureSkuIsFree(MercadolibreAccount $account, string $sku): void

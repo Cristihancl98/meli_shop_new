@@ -14,7 +14,7 @@
 @endif
 
 <div class="filter-panel mb-4">
-    <form method="GET" action="{{ route('publisher.create') }}">
+    <form method="GET" action="{{ route('publisher.create') }}" id="sku-lookup-form">
         <div class="row g-3 align-items-end">
             <div class="col-md-6">
                 <label class="form-label">SKU / ASIN de Amazon</label>
@@ -172,6 +172,11 @@
         </div>
     </div>
 </form>
+@elseif($scraping)
+    <div class="empty-state" id="scraping-placeholder">
+        <i class="bi bi-hourglass-split" style="font-size:40px;"></i>
+        <p>El SKU <strong>{{ $sku }}</strong> no está en el catálogo. Se está consultando en Amazon en segundo plano; la página se actualizará sola.</p>
+    </div>
 @elseif(!$lookupError)
     <div class="empty-state">
         <i class="bi bi-upc-scan" style="font-size:40px;"></i>
@@ -179,10 +184,93 @@
     </div>
 @endif
 
+<div class="modal fade" id="loading-modal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="loading-modal-title" aria-hidden="true"
+     @if($scraping) data-scraping-url="{{ route('publisher.scraping-status', ['sku' => $sku]) }}" @endif>
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-card border-0 p-4 text-center">
+            <div class="spinner-border mx-auto mb-3" role="status" style="color:var(--neon-blue);width:3rem;height:3rem;"></div>
+            <h6 id="loading-modal-title" class="mb-2" style="color:var(--text-strong);">Buscando el producto…</h6>
+            <p id="loading-modal-text" class="mb-1" style="color:var(--text-muted);font-size:13px;">Consultando el catálogo.</p>
+            <small id="loading-modal-elapsed" style="color:var(--text-faint);font-size:11px;"></small>
+            <div id="loading-modal-actions" class="mt-3 d-none">
+                <a href="{{ route('publisher.create', ['sku' => $sku]) }}" class="btn-neon me-2">Reintentar</a>
+                <button type="button" class="btn-ghost" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @push('scripts')
 <script>
+(function () {
+    const modalElement = document.getElementById('loading-modal');
+    const modal        = bootstrap.Modal.getOrCreateInstance(modalElement);
+    const title        = document.getElementById('loading-modal-title');
+    const text         = document.getElementById('loading-modal-text');
+    const elapsed      = document.getElementById('loading-modal-elapsed');
+    const actions      = document.getElementById('loading-modal-actions');
+    const statusUrl    = modalElement.dataset.scrapingUrl;
+    const POLL_MS      = 3000;
+    const MAX_WAIT_MS  = 5 * 60 * 1000;
+
+    const show = (heading, message) => {
+        title.textContent = heading;
+        text.textContent  = message;
+        modal.show();
+    };
+
+    document.getElementById('sku-lookup-form').addEventListener('submit', () => {
+        show('Buscando el producto…', 'Consultando el catálogo.');
+    });
+
+    window.addEventListener('pageshow', (event) => {
+        if (event.persisted) modal.hide();
+    });
+
+    if (!statusUrl) return;
+
+    const startedAt = Date.now();
+    show('Consultando Amazon…', 'El producto no está en el catálogo. Se está obteniendo de Amazon en segundo plano; puede tardar 1 o 2 minutos.');
+
+    const tick = setInterval(() => {
+        elapsed.textContent = Math.round((Date.now() - startedAt) / 1000) + ' s';
+    }, 1000);
+
+    const giveUp = (message) => {
+        clearInterval(tick);
+        document.querySelector('#loading-modal .spinner-border').classList.add('d-none');
+        title.textContent = 'La consulta está tardando más de lo normal';
+        text.textContent  = message;
+        actions.classList.remove('d-none');
+    };
+
+    const poll = async () => {
+        if (Date.now() - startedAt > MAX_WAIT_MS) {
+            giveUp('Verifica que el worker de colas esté corriendo y que el servicio de scraping responda.');
+            return;
+        }
+
+        try {
+            const { data } = await axios.get(statusUrl);
+            if (['done', 'failed', 'none'].includes(data.data.status)) {
+                window.location.reload();
+                return;
+            }
+        } catch (error) {
+            if (error.response?.status === 401 || error.response?.status === 419) {
+                window.location.reload();
+                return;
+            }
+        }
+
+        setTimeout(poll, POLL_MS);
+    };
+
+    setTimeout(poll, POLL_MS);
+})();
+
 (function () {
     const button = document.getElementById('price-recalculate');
     if (!button) return;

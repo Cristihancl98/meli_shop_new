@@ -47,6 +47,7 @@ Route::middleware('web.auth')->group(function () {
     Route::get('publisher', [PublisherController::class, 'create'])->name('publisher.create');
     Route::post('publisher', [PublisherController::class, 'store'])->name('publisher.store');
     Route::get('publisher/price', [PublisherController::class, 'price'])->name('publisher.price');
+    Route::get('publisher/scraping-status', [PublisherController::class, 'scrapingStatus'])->name('publisher.scraping-status');
     Route::get('publisher/catalog', [PublisherController::class, 'catalog'])->name('publisher.catalog');
     Route::get('publisher/codes', [PublisherController::class, 'codes'])->name('publisher.codes');
     Route::post('publisher/codes', [PublisherController::class, 'storeCodes'])->name('publisher.codes.store');

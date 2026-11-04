@@ -888,6 +888,11 @@
             </div>
         </div>
     @endif
+    @if(session('meli_error'))
+        <div class="mx-4">
+            <x-meli-error :error="session('meli_error')" />
+        </div>
+    @endif
 
     {{-- CONTENT --}}
     <div class="content-wrap">

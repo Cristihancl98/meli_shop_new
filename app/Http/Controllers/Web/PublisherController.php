@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Web;
 
 use App\DTOs\PublishProductDTO;
 use App\Exceptions\BusinessRuleException;
+use App\Exceptions\ScrapingInProgressException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\BulkPublish\ListBulkCodesRequest;
 use App\Http\Requests\Pricing\CalculatePriceRequest;
 use App\Http\Requests\BulkPublish\StoreBulkCodesRequest;
 use App\Http\Requests\Product\PublishProductRequest;
+use App\Http\Requests\Product\ScrapingStatusRequest;
 use App\Models\Product;
 use App\Services\BulkPublishService;
 use App\Services\CatalogService;
@@ -53,18 +55,30 @@ class PublisherController extends Controller
         $lookup            = null;
         $lookupError       = null;
         $suggestedCategory = null;
+        $scraping          = false;
 
         if ($sku !== '') {
             try {
-                $lookup            = $this->publishingService->lookupSku($account, $sku);
+                $lookup            = $this->publishingService->lookupSku($account, $sku, true);
                 $suggestedCategory = $lookup['categoria_meli']
                     ?? ($account ? $this->publishingService->suggestCategory($account, (string) $lookup['titulo']) : null);
+            } catch (ScrapingInProgressException) {
+                $scraping = true;
             } catch (BusinessRuleException $e) {
                 $lookupError = $e->getMessage();
             }
         }
 
-        return view('publisher.create', compact('account', 'sku', 'lookup', 'lookupError', 'suggestedCategory'));
+        return view('publisher.create', compact('account', 'sku', 'lookup', 'lookupError', 'suggestedCategory', 'scraping'));
+    }
+
+    public function scrapingStatus(ScrapingStatusRequest $request): JsonResponse
+    {
+        $this->authorize('publish', Product::class);
+
+        $status = $this->publishingService->scrapingStatus($request->validated('sku'));
+
+        return $this->ok(['status' => $status->value], 'Estado del scraping.');
     }
 
     public function store(PublishProductRequest $request): RedirectResponse
