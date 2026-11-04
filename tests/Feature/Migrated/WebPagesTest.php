@@ -90,10 +90,10 @@ class WebPagesTest extends TestCase
     public function test_publisher_lookup_shows_price_and_suggested_category(): void
     {
         [$admin, $account] = $this->adminWithAccount();
-        $this->setSettings(['scraping_url' => 'https://scraper.test', 'dollar_price' => 4000]);
+        $this->setSettings(['dollar_price' => 4000]);
+        $this->catalog->products = [['titulo' => 'Reloj inteligente', 'precio' => 50, 'peso' => 1, 'sku' => 'B0WATCH', 'imagenes' => ['https://img.test/r.jpg']]];
 
         Http::fake([
-            'scraper.test/*' => Http::response(['titulo' => 'Reloj inteligente', 'precio' => 50, 'peso' => 1, 'imagenes' => ['https://img.test/r.jpg']]),
             'api.mercadolibre.com/sites/MCO/domain_discovery/search*' => Http::response([['category_id' => 'MCO5555']]),
         ]);
 

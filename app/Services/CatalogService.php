@@ -2,12 +2,9 @@
 
 namespace App\Services;
 
-use App\Enums\ScrapingStatus;
 use App\Enums\SettingKey;
 use App\Exceptions\BusinessRuleException;
 use App\Interfaces\ExternalCatalogRepositoryInterface;
-use App\Jobs\ScrapeSkuJob;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -18,16 +15,11 @@ class CatalogService
 
     private const SCRAPING_PATH = 'api/v1/app/scriping/';
 
-    private const SYNC_SCRAPING_TIMEOUT = 60;
-
-    private const BACKGROUND_SCRAPING_TIMEOUT = 240;
-
-    private const SCRAPING_CACHE_MINUTES = 30;
+    private const SCRAPING_TIMEOUT = 60;
 
     public function __construct(
         private readonly ExternalCatalogRepositoryInterface $catalogRepository,
-        private readonly SettingService $settingService,
-        private readonly TenantManager $tenantManager
+        private readonly SettingService $settingService
     ) {}
 
     public function findProductBySku(string $sku, bool $allowLiveScraping = true): ?array
@@ -38,11 +30,7 @@ class CatalogService
             return $this->toLookup($document, self::SOURCE_CATALOG);
         }
 
-        $scraped = $this->scrapedResult($sku);
-
-        if (!$scraped && $allowLiveScraping && $this->scrapingEnabled()) {
-            $scraped = $this->scrapeSku($sku);
-        }
+        $scraped = $allowLiveScraping && $this->scrapingEnabled() ? $this->scrapeSku($sku) : null;
 
         return $scraped ? $this->toLookup($scraped, self::SOURCE_SCRAPER) : null;
     }
@@ -52,60 +40,15 @@ class CatalogService
         return (bool) $this->settingService->get(SettingKey::ScrapingUrl);
     }
 
-    public function scrapingStatus(string $sku): ScrapingStatus
+    public function scraperUrl(string $sku): string
     {
-        return ScrapingStatus::tryFrom(Cache::get($this->scrapingCacheKey($sku))['status'] ?? '') ?? ScrapingStatus::None;
-    }
+        $baseUrl = $this->settingService->get(SettingKey::ScrapingUrl);
 
-    public function startScraping(string $sku): void
-    {
-        if ($this->scrapingStatus($sku) === ScrapingStatus::Pending) {
-            return;
+        if (!$baseUrl) {
+            throw new BusinessRuleException('No hay URL de scraping configurada para esta tienda.');
         }
 
-        $this->rememberScraping($sku, ScrapingStatus::Pending);
-
-        ScrapeSkuJob::dispatch($sku);
-    }
-
-    public function runScraping(string $sku): void
-    {
-        $data = $this->scrapeSku($sku, self::BACKGROUND_SCRAPING_TIMEOUT);
-
-        $data
-            ? $this->rememberScraping($sku, ScrapingStatus::Done, $data)
-            : $this->markScrapingFailed($sku);
-    }
-
-    public function markScrapingFailed(string $sku): void
-    {
-        $this->rememberScraping($sku, ScrapingStatus::Failed);
-    }
-
-    public function forgetScraping(string $sku): void
-    {
-        Cache::forget($this->scrapingCacheKey($sku));
-    }
-
-    private function scrapedResult(string $sku): ?array
-    {
-        $cached = Cache::get($this->scrapingCacheKey($sku));
-
-        return ($cached['status'] ?? null) === ScrapingStatus::Done->value ? $cached['data'] : null;
-    }
-
-    private function rememberScraping(string $sku, ScrapingStatus $status, ?array $data = null): void
-    {
-        Cache::put(
-            $this->scrapingCacheKey($sku),
-            ['status' => $status->value, 'data' => $data],
-            now()->addMinutes(self::SCRAPING_CACHE_MINUTES)
-        );
-    }
-
-    private function scrapingCacheKey(string $sku): string
-    {
-        return 'scraping:' . ($this->tenantManager->current()?->id ?? 0) . ':' . strtoupper(trim($sku));
+        return rtrim($baseUrl, '/') . '/' . self::SCRAPING_PATH . rawurlencode(trim($sku));
     }
 
     public function findByCategory(string $meliCategoryId): array
@@ -123,16 +66,12 @@ class CatalogService
         return $this->catalogRepository->currentDollarPrice();
     }
 
-    public function scrapeSku(string $sku, int $timeout = self::SYNC_SCRAPING_TIMEOUT): ?array
+    public function scrapeSku(string $sku): ?array
     {
-        $baseUrl = $this->settingService->get(SettingKey::ScrapingUrl);
-
-        if (!$baseUrl) {
-            throw new BusinessRuleException('No hay URL de scraping configurada para esta tienda.');
-        }
+        $url = $this->scraperUrl($sku);
 
         try {
-            $response = Http::timeout($timeout)->get(rtrim($baseUrl, '/') . '/' . self::SCRAPING_PATH . urlencode($sku));
+            $response = Http::timeout(self::SCRAPING_TIMEOUT)->get($url);
         } catch (\Throwable $e) {
             Log::warning('Scraping SKU falló', ['sku' => $sku, 'error' => $e->getMessage()]);
             return null;

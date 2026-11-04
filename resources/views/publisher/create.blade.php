@@ -179,10 +179,10 @@
         </div>
     </div>
 </form>
-@elseif($scraping)
+@elseif($scraperUrl)
     <div class="empty-state" id="scraping-placeholder">
         <i class="bi bi-hourglass-split" style="font-size:40px;"></i>
-        <p>El SKU <strong>{{ $sku }}</strong> no está en el catálogo. Se está consultando en Amazon en segundo plano; la página se actualizará sola.</p>
+        <p>El SKU <strong>{{ $sku }}</strong> no está en el catálogo. Se está consultando en Amazon a través del servicio de scraping; la página se actualizará sola.</p>
     </div>
 @elseif(!$lookupError)
     <div class="empty-state">
@@ -216,7 +216,7 @@
 </div>
 
 <div class="modal fade" id="loading-modal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="loading-modal-title" aria-hidden="true"
-     @if($scraping) data-scraping-url="{{ route('publisher.scraping-status', ['sku' => $sku]) }}" @endif>
+     @if($scraperUrl) data-scraper-url="{{ $scraperUrl }}" data-reload-url="{{ route('publisher.create', ['sku' => $sku, 'scraped' => 1]) }}" @endif>
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content glass-card border-0 p-4 text-center">
             <div class="spinner-border mx-auto mb-3" role="status" style="color:var(--neon-blue);width:3rem;height:3rem;"></div>
@@ -351,8 +351,8 @@
     const text         = document.getElementById('loading-modal-text');
     const elapsed      = document.getElementById('loading-modal-elapsed');
     const actions      = document.getElementById('loading-modal-actions');
-    const statusUrl    = modalElement.dataset.scrapingUrl;
-    const POLL_MS      = 3000;
+    const scraperUrl   = modalElement.dataset.scraperUrl;
+    const reloadUrl    = modalElement.dataset.reloadUrl;
     const MAX_WAIT_MS  = 5 * 60 * 1000;
 
     const show = (heading, message) => {
@@ -369,46 +369,48 @@
         if (event.persisted) modal.hide();
     });
 
-    if (!statusUrl) return;
+    if (!scraperUrl) return;
 
     const startedAt = Date.now();
-    show('Consultando Amazon…', 'El producto no está en el catálogo. Se está obteniendo de Amazon en segundo plano; puede tardar 1 o 2 minutos.');
+    show('Consultando Amazon…', 'El producto no está en el catálogo. Se está obteniendo de Amazon con el servicio de scraping; puede tardar 1 o 2 minutos.');
 
     const tick = setInterval(() => {
         elapsed.textContent = Math.round((Date.now() - startedAt) / 1000) + ' s';
     }, 1000);
 
-    const giveUp = (message) => {
+    const fail = (heading, message) => {
         clearInterval(tick);
         document.querySelector('#loading-modal .spinner-border').classList.add('d-none');
-        title.textContent = 'La consulta está tardando más de lo normal';
+        title.textContent = heading;
         text.textContent  = message;
         actions.classList.remove('d-none');
     };
 
-    const poll = async () => {
-        if (Date.now() - startedAt > MAX_WAIT_MS) {
-            giveUp('Verifica que el worker de colas esté corriendo y que el servicio de scraping responda.');
-            return;
-        }
+    const scrape = async () => {
+        const controller = new AbortController();
+        const timeout    = setTimeout(() => controller.abort(), MAX_WAIT_MS);
 
         try {
-            const { data } = await axios.get(statusUrl);
-            if (['done', 'failed', 'none'].includes(data.data.status)) {
-                window.location.reload();
-                return;
-            }
-        } catch (error) {
-            if (error.response?.status === 401 || error.response?.status === 419) {
-                window.location.reload();
-                return;
-            }
-        }
+            const response = await fetch(scraperUrl, { signal: controller.signal });
+            const data     = await response.json().catch(() => ({}));
+            const exists   = /ya existe/i.test(data.error ?? '');
 
-        setTimeout(poll, POLL_MS);
+            if ((response.ok && data.titulo) || exists) {
+                window.location.assign(reloadUrl);
+                return;
+            }
+
+            fail('No fue posible obtener el producto', data.error ?? ('El scraper respondió HTTP ' + response.status + '.'));
+        } catch (error) {
+            error.name === 'AbortError'
+                ? fail('La consulta tardó demasiado', 'El scraper no respondió en 5 minutos. Inténtalo de nuevo.')
+                : fail('No se pudo conectar con el scraper', 'Verifica que ' + new URL(scraperUrl).origin + ' sea accesible desde el navegador y use HTTPS.');
+        } finally {
+            clearTimeout(timeout);
+        }
     };
 
-    setTimeout(poll, POLL_MS);
+    scrape();
 })();
 
 (function () {
