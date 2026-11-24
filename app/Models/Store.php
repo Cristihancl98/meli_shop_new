@@ -16,17 +16,21 @@ class Store extends Model
         'name',
         'connection_code',
         'database',
+        'db_username',
+        'db_password',
         'owner_name',
         'owner_email',
         'owner_phone',
         'is_active',
     ];
 
-    protected $hidden = ['database'];
+    protected $hidden = ['database', 'db_username', 'db_password'];
 
     protected $casts = [
-        'database'  => 'encrypted',
-        'is_active' => 'boolean',
+        'database'    => 'encrypted',
+        'db_username' => 'encrypted',
+        'db_password' => 'encrypted',
+        'is_active'   => 'boolean',
     ];
 
     public function meliAccounts(): HasMany

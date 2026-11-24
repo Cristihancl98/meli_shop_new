@@ -14,5 +14,7 @@ final class CreateStoreDTO
         public readonly ?string $ownerName = null,
         public readonly ?string $ownerEmail = null,
         public readonly ?string $ownerPhone = null,
+        public readonly ?string $dbUsername = null,
+        public readonly ?string $dbPassword = null,
     ) {}
 }

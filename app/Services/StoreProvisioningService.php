@@ -31,12 +31,18 @@ class StoreProvisioningService
             throw new BusinessRuleException('La base de datos ya está asignada a otra tienda.');
         }
 
-        $this->createDatabase($dto->database);
+        $this->assertValidDatabaseName($dto->database);
+
+        if (config('tenancy.create_database')) {
+            $this->createDatabase($dto->database);
+        }
 
         $store = $this->storeRepository->create([
             'name'            => $dto->name,
             'connection_code' => $dto->connectionCode,
             'database'        => $dto->database,
+            'db_username'     => $this->resolveDatabaseUsername($dto->database, $dto->dbUsername),
+            'db_password'     => $dto->dbPassword,
             'owner_name'      => $dto->ownerName,
             'owner_email'     => $dto->ownerEmail,
             'owner_phone'     => $dto->ownerPhone,
@@ -61,6 +67,35 @@ class StoreProvisioningService
         });
 
         return $store;
+    }
+
+    public function findStore(string $identifier): ?Store
+    {
+        return $this->storeRepository->findByIdOrCode($identifier);
+    }
+
+    public function updateDatabaseCredentials(Store $store, ?string $username, ?string $password): Store
+    {
+        $credentials = ['db_username' => $username, 'db_password' => $password];
+        $store->fill($credentials);
+
+        if ($error = $this->connectionError($store)) {
+            $store->refresh();
+            throw new BusinessRuleException("No se pudo conectar a la BD de la tienda: {$error}");
+        }
+
+        return $this->storeRepository->update($store, $credentials);
+    }
+
+    private function connectionError(Store $store): ?string
+    {
+        try {
+            $this->tenantManager->runFor($store, fn () => DB::connection('tenant')->getPdo());
+        } catch (\Throwable $e) {
+            return $e->getMessage();
+        }
+
+        return null;
     }
 
     public function migrate(Store $store, bool $fresh = false): string
@@ -90,6 +125,10 @@ class StoreProvisioningService
         $database = (string) config('database.connections.landlord.database');
         $this->assertValidDatabaseName($database);
 
+        if (!config('tenancy.create_database')) {
+            return;
+        }
+
         config(['database.connections.landlord_server' => array_merge(config('database.connections.landlord'), ['database' => null])]);
 
         DB::connection('landlord_server')->statement(
@@ -97,6 +136,15 @@ class StoreProvisioningService
         );
 
         DB::purge('landlord_server');
+    }
+
+    private function resolveDatabaseUsername(string $database, ?string $username): ?string
+    {
+        if ($username) {
+            return $username;
+        }
+
+        return config('tenancy.username_from_database') ? $database : null;
     }
 
     private function assertValidDatabaseName(string $database): void

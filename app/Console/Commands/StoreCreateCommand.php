@@ -14,6 +14,8 @@ class StoreCreateCommand extends Command
         {name : Nombre de la tienda}
         {--code= : Código de conexión (se genera si se omite)}
         {--database= : Nombre de la BD de la tienda (por defecto prefijo + nombre)}
+        {--db-username= : Usuario MySQL de la BD de la tienda (por defecto el global, o el nombre de la BD con TENANCY_DB_USERNAME_FROM_DATABASE)}
+        {--db-password= : Clave MySQL de la BD de la tienda (por defecto TENANT_DB_PASSWORD)}
         {--admin-email= : Correo del administrador inicial}
         {--admin-name=Administrador : Nombre del administrador inicial}
         {--admin-password= : Clave del administrador (se genera si se omite)}
@@ -40,6 +42,8 @@ class StoreCreateCommand extends Command
                 ownerName:      $this->option('owner-name'),
                 ownerEmail:     $this->option('owner-email'),
                 ownerPhone:     $this->option('owner-phone'),
+                dbUsername:     $this->option('db-username'),
+                dbPassword:     $this->option('db-password'),
             ));
         } catch (BusinessRuleException $e) {
             $this->error($e->getMessage());
@@ -50,6 +54,7 @@ class StoreCreateCommand extends Command
         $this->table(['Campo', 'Valor'], [
             ['Código de conexión', $code],
             ['Base de datos', $database],
+            ['Usuario BD', $store->db_username ?: '(global)'],
             ['Admin', $adminEmail],
             ['Clave admin', $this->option('admin-password') ? '(la indicada)' : $password],
         ]);

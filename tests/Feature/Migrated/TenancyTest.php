@@ -2,9 +2,11 @@
 
 namespace Tests\Feature\Migrated;
 
+use App\Interfaces\StoreRepositoryInterface;
 use App\Jobs\SyncQuestionsJob;
 use App\Jobs\SyncReputationJob;
 use App\Models\MercadolibreAccount;
+use App\Models\Store;
 use App\Models\User;
 use App\Services\TenantManager;
 use Illuminate\Queue\Events\JobProcessing;
@@ -192,6 +194,80 @@ class TenancyTest extends TestCase
         $this->artisan('store:create', ['name' => 'Otra', '--code' => 'TEST-CODE', '--admin-email' => 'a@b.c'])
             ->expectsOutput('El código de conexión ya está en uso.')
             ->assertFailed();
+
+        $this->artisan('store:create', ['name' => 'Mala', '--code' => 'NEW', '--database' => 'bad-name;drop', '--admin-email' => 'a@b.c'])
+            ->expectsOutput('Nombre de base de datos inválido: solo letras, números y guion bajo.')
+            ->assertFailed();
+    }
+
+    public function test_store_create_uses_existing_database_when_creation_is_disabled(): void
+    {
+        config(['tenancy.create_database' => false]);
+        $statements = [];
+        DB::listen(function ($query) use (&$statements) {
+            $statements[] = $query->sql;
+        });
+
+        $this->artisan('store:create', ['name' => 'Ingeshop', '--code' => 'INGE', '--database' => 'u289900999_ingeshop', '--admin-email' => 'admin@ingeshop.co'])
+            ->assertSuccessful();
+
+        $this->assertSame('u289900999_ingeshop', Store::where('connection_code', 'INGE')->value('database'));
+        $this->assertEmpty(array_filter($statements, fn ($sql) => str_contains(strtoupper($sql), 'CREATE DATABASE')));
+    }
+
+    public function test_store_create_can_derive_db_username_from_database_name(): void
+    {
+        config(['tenancy.create_database' => false, 'tenancy.username_from_database' => true]);
+
+        $this->artisan('store:create', ['name' => 'Ingeshop', '--code' => 'INGE', '--database' => 'u289900999_ingeshop', '--admin-email' => 'admin@ingeshop.co'])
+            ->assertSuccessful();
+        $this->artisan('store:create', ['name' => 'Otra', '--code' => 'OTRA', '--database' => 'u289900999_otra', '--db-username' => 'u289900999_custom', '--db-password' => 'secreta', '--admin-email' => 'admin@otra.co'])
+            ->assertSuccessful();
+
+        $this->assertSame('u289900999_ingeshop', Store::where('connection_code', 'INGE')->first()->db_username);
+        $otra = Store::where('connection_code', 'OTRA')->first();
+        $this->assertSame('u289900999_custom', $otra->db_username);
+        $this->assertSame('secreta', $otra->db_password);
+    }
+
+    public function test_store_without_own_credentials_uses_global_ones(): void
+    {
+        config(['database.connections.tenant.username' => 'global_user', 'database.connections.tenant.password' => 'global_pass']);
+        $manager = new TenantManager(app(StoreRepositoryInterface::class));
+
+        $global = $this->createStore('Global', 'GLOBAL');
+        $own    = $this->createStore('Propia', 'PROPIA');
+        $own->update(['db_username' => 'u1_propia', 'db_password' => 'clave_propia']);
+        $sharedPassword = $this->createStore('Misma clave', 'MISMA');
+        $sharedPassword->update(['db_username' => 'u1_misma']);
+
+        $this->assertSame(['database' => $global->database, 'username' => 'global_user', 'password' => 'global_pass'], $manager->connectionConfigFor($global));
+        $this->assertSame(['database' => $own->database, 'username' => 'u1_propia', 'password' => 'clave_propia'], $manager->connectionConfigFor($own));
+        $this->assertSame(['database' => $sharedPassword->database, 'username' => 'u1_misma', 'password' => 'global_pass'], $manager->connectionConfigFor($sharedPassword));
+    }
+
+    public function test_db_credentials_command_updates_and_resets_store_credentials(): void
+    {
+        $this->artisan('store:db-credentials', ['store' => 'TEST-CODE', '--db-username' => 'u1_test', '--db-password' => 'clave'])
+            ->expectsOutput('[Tienda Test] conexión correcta, credenciales guardadas (usuario: u1_test).')
+            ->assertSuccessful();
+
+        $this->assertSame('u1_test', $this->store->fresh()->db_username);
+        $this->assertSame('clave', $this->store->fresh()->db_password);
+
+        $this->artisan('store:db-credentials', ['store' => (string) $this->store->id, '--global' => true])->assertSuccessful();
+
+        $this->assertNull($this->store->fresh()->db_username);
+        $this->assertNull($this->store->fresh()->db_password);
+
+        $this->artisan('store:db-credentials', ['store' => 'NO-EXISTE', '--global' => true])
+            ->expectsOutput('Tienda no encontrada.')
+            ->assertFailed();
+    }
+
+    public function test_bad_database_name_is_rejected_even_when_creation_is_disabled(): void
+    {
+        config(['tenancy.create_database' => false]);
 
         $this->artisan('store:create', ['name' => 'Mala', '--code' => 'NEW', '--database' => 'bad-name;drop', '--admin-email' => 'a@b.c'])
             ->expectsOutput('Nombre de base de datos inválido: solo letras, números y guion bajo.')

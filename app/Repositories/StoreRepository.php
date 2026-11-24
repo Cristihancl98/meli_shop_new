@@ -49,6 +49,19 @@ class StoreRepository implements StoreRepositoryInterface
         return Store::create($data);
     }
 
+    public function findByIdOrCode(string $identifier): ?Store
+    {
+        return Store::where('connection_code', $identifier)->first()
+            ?? (ctype_digit($identifier) ? Store::find((int) $identifier) : null);
+    }
+
+    public function update(Store $store, array $data): Store
+    {
+        $store->update($data);
+
+        return $store;
+    }
+
     public function registerMeliAccount(int $storeId, string $meliUserId): void
     {
         StoreMeliAccount::updateOrCreate(['meli_user_id' => $meliUserId], ['store_id' => $storeId]);

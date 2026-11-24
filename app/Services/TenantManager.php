@@ -10,6 +10,8 @@ class TenantManager
 {
     private ?Store $current = null;
 
+    private ?array $defaultCredentials = null;
+
     public function __construct(
         private readonly StoreRepositoryInterface $storeRepository
     ) {}
@@ -26,11 +28,27 @@ class TenantManager
         }
 
         if (config('tenancy.switch_connection')) {
-            config(['database.connections.tenant.database' => $store->database]);
+            foreach ($this->connectionConfigFor($store) as $key => $value) {
+                config(["database.connections.tenant.{$key}" => $value]);
+            }
             DB::purge('tenant');
         }
 
         $this->current = $store;
+    }
+
+    public function connectionConfigFor(Store $store): array
+    {
+        $this->defaultCredentials ??= [
+            'username' => config('database.connections.tenant.username'),
+            'password' => config('database.connections.tenant.password'),
+        ];
+
+        return [
+            'database' => $store->database,
+            'username' => $store->db_username ?: $this->defaultCredentials['username'],
+            'password' => $store->db_password ?: $this->defaultCredentials['password'],
+        ];
     }
 
     public function activateById(?int $storeId): ?Store

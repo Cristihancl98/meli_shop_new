@@ -19,7 +19,7 @@ Hay **dos niveles** de multi-tenencia:
 1. **Tienda (`Store`) = una base de datos MySQL propia.** La BD central (`landlord`, p. ej. `meli_central`) solo guarda `stores`, `store_meli_accounts`, sessions, cache y jobs. Todo lo demás (users, products, orders…) vive en la BD de cada tienda (`meli_store_<slug>`), conexión `tenant`, que es la conexión por defecto (`DB_CONNECTION=tenant`) y cuyo `database` es `null` hasta que se activa una tienda.
 2. **Cuenta MeLi (`MercadolibreAccount`) dentro de la tienda.** Un usuario vincula N cuentas; la activa se toma de `session('active_meli_account_id')` (web) o del header `X-Meli-Account` (API) vía el trait `ResolvesMeliAccount`.
 
-`App\Services\TenantManager` (singleton) cambia la conexión `tenant` (`config(...)` + `DB::purge('tenant')`). Puntos de activación:
+`App\Services\TenantManager` (singleton) cambia la conexión `tenant` (`config(...)` + `DB::purge('tenant')`): BD, usuario y clave. Cada `Store` puede tener credenciales propias (`db_username`/`db_password`, cifradas); si no, usa las globales `TENANT_DB_*`. En hostings compartidos (Hostinger): `TENANCY_CREATE_DATABASE=false` (las BD se crean en el panel) y `TENANCY_DB_USERNAME_FROM_DATABASE=true` (usuario = nombre de la BD); `store:db-credentials` cambia las credenciales de una tienda existente y prueba la conexión antes de guardar. Puntos de activación:
 - **Web**: `IdentifyTenantFromSession` (añadido al grupo `web`) lee `session('store_id')`; sin tienda redirige a `/connect`, donde se ingresa el *código de conexión*.
 - **API login/register**: middleware `tenant.code` (header `X-Store-Code` o `connection_code`).
 - **API autenticada**: `JwtMiddleware` lee el claim `store` del JWT y activa la tienda antes de `JWTAuth::authenticate()`.

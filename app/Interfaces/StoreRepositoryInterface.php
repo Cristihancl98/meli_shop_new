@@ -14,5 +14,7 @@ interface StoreRepositoryInterface
     public function active(?int $onlyId = null): Collection;
     public function isDatabaseInUse(string $database): bool;
     public function create(array $data): Store;
+    public function findByIdOrCode(string $identifier): ?Store;
+    public function update(Store $store, array $data): Store;
     public function registerMeliAccount(int $storeId, string $meliUserId): void;
 }
