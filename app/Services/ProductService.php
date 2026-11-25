@@ -2,9 +2,12 @@
 
 namespace App\Services;
 
+use App\DTOs\CatalogImportStatusDTO;
 use App\DTOs\ProductDTO;
 use App\Events\ProductSynced;
 use App\Interfaces\ProductRepositoryInterface;
+use App\Interfaces\SyncLogRepositoryInterface;
+use App\Jobs\SyncProductsJob;
 use App\Models\MercadolibreAccount;
 use App\Models\Product;
 use App\Models\SyncLog;
@@ -13,10 +16,50 @@ use Illuminate\Support\Facades\Storage;
 
 class ProductService
 {
+    private const IMPORT_ACTIVE_MINUTES  = 30;
+    private const IMPORT_PENDING_WARNING = 3;
+
     public function __construct(
         private readonly ProductRepositoryInterface $productRepository,
-        private readonly MercadoLibreService $meliService
+        private readonly MercadoLibreService $meliService,
+        private readonly SyncLogRepositoryInterface $syncLogRepository
     ) {}
+
+    public function startCatalogImport(MercadolibreAccount $account): bool
+    {
+        if ($this->syncLogRepository->activeByPrefix($account->id, 'products', SyncProductsJob::LOG_PREFIX, self::IMPORT_ACTIVE_MINUTES)) {
+            return false;
+        }
+
+        $log = $this->syncLogRepository->create([
+            'mercadolibre_account_id' => $account->id,
+            'type'                    => 'products',
+            'status'                  => 'pending',
+            'message'                 => SyncProductsJob::LOG_PREFIX . ' en cola',
+        ]);
+
+        SyncProductsJob::dispatch($account, $log->id);
+
+        return true;
+    }
+
+    public function catalogImportStatus(MercadolibreAccount $account): ?CatalogImportStatusDTO
+    {
+        $log = $this->syncLogRepository->latestByPrefix($account->id, 'products', SyncProductsJob::LOG_PREFIX);
+
+        if (!$log) {
+            return null;
+        }
+
+        $stale = in_array($log->status, ['pending', 'running'], true) && $log->created_at->lt(now()->subMinutes(self::IMPORT_ACTIVE_MINUTES));
+
+        return new CatalogImportStatusDTO(
+            state:          $stale ? 'error' : $log->status,
+            message:        $stale ? 'La importación anterior no terminó. Puedes intentarlo de nuevo.' : trim(str_replace(SyncProductsJob::LOG_PREFIX, '', $log->message), ': '),
+            at:             $log->finished_at ?? $log->started_at ?? $log->created_at,
+            waitingTooLong: $log->status === 'pending' && !$stale && $log->created_at->lt(now()->subMinutes(self::IMPORT_PENDING_WARNING)),
+        );
+    }
 
     public function list(MercadolibreAccount $account, array $filters = []): LengthAwarePaginator
     {

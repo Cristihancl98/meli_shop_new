@@ -61,6 +61,18 @@ class Product extends Model
         return in_array($status, self::STATUSES, true) ? $status : 'closed';
     }
 
+    public function getStatusLabelAttribute(): string
+    {
+        return match ($this->status) {
+            'active'       => 'Activo',
+            'paused'       => 'Pausado',
+            'closed'       => 'Finalizado',
+            'under_review' => 'En revisión',
+            'inactive'     => 'Inactivo',
+            default        => ucfirst((string) $this->status),
+        };
+    }
+
     public function account(): BelongsTo
     {
         return $this->belongsTo(MercadolibreAccount::class, 'mercadolibre_account_id');

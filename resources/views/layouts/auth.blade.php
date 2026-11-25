@@ -2,9 +2,10 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Acceso') — Marketplace Manager</title>
+    @include('layouts._pwa-head')
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -26,10 +27,12 @@
             font-family: 'Inter', sans-serif;
             background: var(--dark-bg);
             min-height: 100vh;
+            min-height: 100dvh;
             display: flex;
             align-items: center;
             justify-content: center;
-            overflow: hidden;
+            overflow-x: hidden;
+            overflow-y: auto;
             position: relative;
         }
 
@@ -394,6 +397,33 @@
         }
         .login-card-light .store-heading-change:hover { text-decoration: underline; }
 
+        .login-wrapper { margin: auto; }
+        .pwa-install-link {
+            display: block;
+            margin-top: 8px;
+            background: none;
+            border: 0;
+            width: 100%;
+            color: inherit;
+            font: inherit;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+        .pwa-install-link[hidden] { display: none; }
+
+        @media (max-width: 575.98px) {
+            .login-wrapper {
+                padding: 12px;
+                padding-top: calc(12px + env(safe-area-inset-top, 0px));
+                padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+            }
+            .login-header { padding: 28px 22px 20px; }
+            .login-body { padding: 8px 22px 28px; }
+            .login-card-light .login-body { padding-top: 28px; }
+            .login-footer { padding: 14px 22px; }
+            .cyber-input { font-size: 16px; }
+            .login-card-light .store-heading-name { font-size: 24px; }
+        }
     </style>
     @stack('styles')
 </head>
@@ -438,7 +468,10 @@
         </div>
 
         <div class="login-footer">
-            Acceso restringido · <span>Marketplace Manager v1.0</span>
+            Acceso restringido · <span>Marketplace Manager v{{ $appVersion }}</span>
+            <button type="button" class="pwa-install-link" data-pwa-install hidden>
+                <i class="bi bi-download"></i> Instalar app en este dispositivo
+            </button>
         </div>
 
     </div>
@@ -464,5 +497,7 @@
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+@include('layouts._pwa-ios-help')
+@include('layouts._pwa-scripts')
 </body>
 </html>

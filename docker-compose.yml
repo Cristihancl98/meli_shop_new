@@ -1,4 +1,5 @@
 x-env: &env
+  APP_ENV: ${DOCKER_APP_ENV:-local}
   DB_CONNECTION: tenant
   DB_HOST: mysql
   DB_PORT: 3306

@@ -41,6 +41,15 @@ El archivo `VERSION` (raíz de `meli/`) se muestra en el pie del menú lateral (
 
 ---
 
+## Responsive y PWA
+
+- El panel debe funcionar en celular. Los estilos responsive viven en `layouts/app.blade.php` (bloque `RESPONSIVE`, breakpoint `767.98px`): menú lateral off-canvas con fondo (`#sidebar-backdrop`), tablas siempre dentro de `.table-responsive`, inputs a 16px en móvil (evita el zoom de iOS) y `env(safe-area-inset-*)` para la app instalada.
+- PWA: `public/manifest.webmanifest` (rutas relativas, funciona en subcarpeta), `public/sw.js`, `public/offline.html`, íconos en `public/icons/`. Partials `layouts/_pwa-head`, `_pwa-scripts` (registro del SW + botón "Instalar app" con `data-pwa-install`) y `_pwa-ios-help`, incluidos en `app` y `auth`.
+- El service worker **nunca cachea HTML** (datos por tienda y sesión): las navegaciones van a red y sin conexión muestran `offline.html`. Al cambiar `sw.js`, subir `CACHE_VERSION`.
+- Instalar en celular requiere HTTPS (producción); en local solo funciona en `localhost`.
+
+---
+
 ## Stack Tecnológico
 
 | Capa | Tecnología | Versión |
@@ -168,6 +177,7 @@ php artisan tenancy:install                 # migraciones de la BD central (land
 php artisan store:create "Mi Tienda" --admin-email=admin@x.com   # crea BD, migra, siembra roles/categorías y admin
 php artisan tenants:migrate [--store=ID] [--fresh --force]       # migra database/migrations/tenant en cada tienda
 php artisan settings:defaults [--store=ID]
+php artisan db:seed --class=DemoStoreSeeder   # SOLO local: tienda DEMO con productos, ventas y preguntas ficticias (credenciales en el seeder)
 php artisan storage:link
 php artisan queue:work --queue=default
 

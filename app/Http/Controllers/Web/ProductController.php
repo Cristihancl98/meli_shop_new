@@ -3,14 +3,16 @@
 namespace App\Http\Controllers\Web;
 
 use App\DTOs\ProductDTO;
+use App\Enums\ProductSort;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Product\ListProductsRequest;
 use App\Http\Requests\Product\StoreProductRequest;
 use App\Http\Requests\Product\UpdateProductRequest;
 use App\Interfaces\MercadolibreAccountRepositoryInterface;
 use App\Models\Category;
+use App\Models\Product;
 use App\Services\ProductService;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\View\View;
 
@@ -21,16 +23,43 @@ class ProductController extends Controller
         private readonly MercadolibreAccountRepositoryInterface $accountRepository
     ) {}
 
-    public function index(Request $request): View
+    public function index(ListProductsRequest $request): View
     {
         $user       = auth()->user();
         $account    = $this->accountRepository->findSelectedByUser($user->id, session('active_meli_account_id'));
         $products   = $account
-            ? $this->productService->list($account, $request->only(['search', 'status', 'category_id', 'min_price', 'max_price', 'sku', 'published_on']))
+            ? $this->productService->list($account, $request->filters())
             : new LengthAwarePaginator([], 0, 20);
         $categories = Category::orderBy('name')->get();
 
-        return view('products.index', compact('products', 'categories', 'account'));
+        $viewMode = $request->validated('view') ?? session('products.view', 'cards');
+        session(['products.view' => $viewMode]);
+
+        $sort      = ProductSort::tryFrom((string) $request->validated('sort')) ?? ProductSort::DEFAULT;
+        $direction = $request->validated('direction') ?? $sort->defaultDirection();
+        $sorts     = ProductSort::cases();
+
+        $importStatus = $account ? $this->productService->catalogImportStatus($account) : null;
+
+        return view('products.index', compact('products', 'categories', 'account', 'viewMode', 'sort', 'direction', 'sorts', 'importStatus'));
+    }
+
+    public function syncAll(): RedirectResponse
+    {
+        $this->authorize('syncAll', Product::class);
+
+        $account = $this->accountRepository->findSelectedByUser(auth()->id(), session('active_meli_account_id'));
+
+        if (!$account) {
+            return redirect()->route('products.index')->with('error', 'Conecta una cuenta de Mercado Libre para sincronizar tus publicaciones.');
+        }
+
+        if (!$this->productService->startCatalogImport($account)) {
+            return redirect()->route('products.index')->with('error', 'Ya hay una sincronización en curso. Espera a que termine.');
+        }
+
+        return redirect()->route('products.index')
+            ->with('success', 'Sincronización iniciada. Tus publicaciones irán apareciendo en unos minutos.');
     }
 
     public function show(int $id): View

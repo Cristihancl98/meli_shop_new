@@ -5,6 +5,7 @@ namespace Tests\Unit;
 use App\DTOs\ProductDTO;
 use App\Events\ProductSynced;
 use App\Interfaces\ProductRepositoryInterface;
+use App\Interfaces\SyncLogRepositoryInterface;
 use App\Models\MercadolibreAccount;
 use App\Models\Product;
 use App\Services\MercadoLibreService;
@@ -29,7 +30,7 @@ class ProductServiceTest extends TestCase
 
         $this->productRepo = Mockery::mock(ProductRepositoryInterface::class);
         $this->meliService = Mockery::mock(MercadoLibreService::class);
-        $this->service     = new ProductService($this->productRepo, $this->meliService);
+        $this->service     = new ProductService($this->productRepo, $this->meliService, app(SyncLogRepositoryInterface::class));
     }
 
     protected function tearDown(): void

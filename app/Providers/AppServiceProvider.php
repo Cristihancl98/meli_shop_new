@@ -11,6 +11,7 @@ use App\Interfaces\PostSaleMessageRepositoryInterface;
 use App\Interfaces\QuestionRepositoryInterface;
 use App\Interfaces\StoreRepositoryInterface;
 use App\Interfaces\StoreSettingRepositoryInterface;
+use App\Interfaces\SyncLogRepositoryInterface;
 use App\Interfaces\UserRepositoryInterface;
 use App\Interfaces\MercadolibreAccountRepositoryInterface;
 use App\Interfaces\OrderRepositoryInterface;
@@ -24,6 +25,7 @@ use App\Repositories\PostSaleMessageRepository;
 use App\Repositories\QuestionRepository;
 use App\Repositories\StoreRepository;
 use App\Repositories\StoreSettingRepository;
+use App\Repositories\SyncLogRepository;
 use App\Services\TenantManager;
 use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Support\Facades\View;
@@ -70,6 +72,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(ExternalCatalogRepositoryInterface::class, MongoCatalogRepository::class);
         $this->app->bind(StoreRepositoryInterface::class, StoreRepository::class);
         $this->app->bind(StoreSettingRepositoryInterface::class, StoreSettingRepository::class);
+        $this->app->bind(SyncLogRepositoryInterface::class, SyncLogRepository::class);
         $this->app->singleton(TenantManager::class);
     }
 
@@ -81,7 +84,7 @@ class AppServiceProvider extends ServiceProvider
 
         Gate::define('view-report',   [\App\Policies\ReportPolicy::class, 'view']);
         Gate::define('export-report', [\App\Policies\ReportPolicy::class, 'export']);
-        View::composer('layouts.app', fn ($view) => $view->with(
+        View::composer(['layouts.app', 'layouts.auth'], fn ($view) => $view->with(
             'appVersion',
             trim((string) @file_get_contents(base_path('VERSION'))) ?: 'dev'
         ));

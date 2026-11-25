@@ -79,6 +79,7 @@ Route::middleware('web.auth')->group(function () {
 
     // Productos
     Route::resource('products', ProductController::class);
+    Route::post('products/sync', [ProductController::class, 'syncAll'])->name('products.sync-all');
     Route::post('products/{id}/sync', [ProductController::class, 'sync'])->name('products.sync');
 
     // Ventas

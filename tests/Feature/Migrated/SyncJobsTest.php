@@ -82,8 +82,10 @@ class SyncJobsTest extends TestCase
         [, $account] = $this->adminWithAccount();
 
         Http::fake([
-            'api.mercadolibre.com/users/123456789/items/search*' => Http::response(['results' => ['MCO77'], 'paging' => ['total' => 1]]),
-            'api.mercadolibre.com/items/MCO77'                   => Http::response([
+            'api.mercadolibre.com/users/123456789/items/search*' => Http::sequence()
+                ->push(['results' => ['MCO77'], 'scroll_id' => 'S1'])
+                ->push(['results' => [], 'scroll_id' => 'S2']),
+            'api.mercadolibre.com/items*' => Http::response([['code' => 200, 'body' => [
                 'id'            => 'MCO77',
                 'title'         => 'Lámpara',
                 'price'         => 99000,
@@ -91,7 +93,7 @@ class SyncJobsTest extends TestCase
                 'sold_quantity' => 3,
                 'attributes'    => [['id' => 'SELLER_SKU', 'value_name' => 'B0LAMP']],
                 'pictures'      => [['secure_url' => 'https://img.test/lamp.jpg']],
-            ]),
+            ]]]),
         ]);
 
         SyncProductsJob::dispatchSync($account);

@@ -37,6 +37,11 @@ class ProductPolicy
         return $user->isAdmin();
     }
 
+    public function syncAll(User $user): bool
+    {
+        return $user->isAdmin();
+    }
+
     public function publish(User $user): bool
     {
         return $user->isAdmin();

@@ -209,6 +209,10 @@ class WebPagesTest extends TestCase
             'titulo' => 'Lámpara', 'precio' => 10, 'peso' => 1, 'sku' => 'B0LAMP',
             'imagenes' => ['https://img.test/1.jpg', 'https://img.test/2.jpg'],
         ]];
+        Http::preventStrayRequests();
+        Http::fake([
+            'api.mercadolibre.com/sites/MCO/domain_discovery/search*' => Http::response([['category_id' => 'MCO5555']]),
+        ]);
 
         $this->actingAs($admin)->get(route('publisher.create', ['sku' => 'B0LAMP']))
             ->assertOk()

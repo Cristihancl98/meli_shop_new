@@ -2,15 +2,21 @@
 <html lang="es" data-theme="dark" data-bs-theme="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Marketplace Manager') — MeLi Colombia</title>
+    @include('layouts._pwa-head')
     <script>
+        window.paintThemeColor = function (theme) {
+            var meta = document.querySelector('meta[name="theme-color"]');
+            if (meta) meta.setAttribute('content', theme === 'light' ? '#ffffff' : '#0b1628');
+        };
         (function () {
             var theme = 'dark';
             try { theme = localStorage.getItem('theme') || 'dark'; } catch (e) {}
             document.documentElement.setAttribute('data-theme', theme);
             document.documentElement.setAttribute('data-bs-theme', theme);
+            window.paintThemeColor(theme);
         })();
     </script>
 
@@ -630,6 +636,8 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
             padding: 20px 24px;
             border-bottom: 1px solid var(--border-glow);
         }
@@ -686,11 +694,78 @@
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: var(--border-glow); border-radius: 4px; }
 
-        /* Responsive */
-        @media (max-width: 768px) {
-            #sidebar { transform: translateX(-100%); }
-            #sidebar.show { transform: translateX(0); }
+        /* ═══ RESPONSIVE ═══ */
+        #sidebar-backdrop {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            background: rgba(2,6,23,.55);
+            -webkit-backdrop-filter: blur(2px);
+            backdrop-filter: blur(2px);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity .2s, visibility .2s;
+        }
+        .sidebar-close { display: none; }
+
+        @media (max-width: 991.98px) {
+            .content-wrap { padding: 24px; }
+            .topbar { padding: 12px 20px; }
+        }
+
+        @media (max-width: 767.98px) {
+            #sidebar {
+                width: min(280px, 85vw);
+                z-index: 1001;
+                transform: translateX(-100%);
+                padding-top: env(safe-area-inset-top, 0px);
+                padding-bottom: env(safe-area-inset-bottom, 0px);
+            }
+            #sidebar.show { transform: translateX(0); box-shadow: 0 0 48px rgba(0,0,0,.45); }
+            #sidebar.show ~ #sidebar-backdrop { opacity: 1; visibility: visible; }
+            body.sidebar-open { overflow: hidden; }
+            .sidebar-close {
+                display: inline-flex;
+                margin-left: auto;
+                background: transparent;
+                border: 0;
+                color: var(--text-muted);
+                font-size: 22px;
+                padding: 4px;
+            }
+            .nav-link { padding: 12px 18px; font-size: 14px; }
+
             #main-content { margin-left: 0; }
+            .topbar {
+                padding: 10px 14px;
+                padding-top: calc(10px + env(safe-area-inset-top, 0px));
+                gap: 10px;
+            }
+            .topbar > div:first-child { min-width: 0; gap: 10px !important; }
+            .page-title { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            .topbar-right { gap: 8px; flex-shrink: 0; }
+            .user-btn { padding: 5px 8px; }
+
+            .content-wrap { padding: 16px 14px calc(28px + env(safe-area-inset-bottom, 0px)); }
+            .content-wrap .d-flex.justify-content-between { flex-wrap: wrap; gap: .75rem; }
+            .metric-card, .chart-card { padding: 16px; }
+            .metric-card > .d-flex { flex-direction: column; gap: 10px !important; }
+            .metric-card .kpi-icon { width: 38px; height: 38px; font-size: 17px; border-radius: 11px; }
+            .metric-label { font-size: 9px; }
+            .metric-value { font-size: 20px; overflow-wrap: anywhere; }
+            .section-header { padding: 14px 16px; }
+            .list-row { padding: 14px 16px; gap: 12px; flex-wrap: wrap; }
+            .empty-state { padding: 48px 20px; }
+            .filter-panel { padding: 14px; }
+            .dark-table thead th, .dark-table tbody td { padding: 10px 12px; }
+            .form-control, .form-select { font-size: 16px; }
+            .pagination { flex-wrap: wrap; row-gap: 6px; }
+            .page-link { padding: 6px 10px; }
+            .mx-4 { margin-left: 14px !important; margin-right: 14px !important; }
+        }
+
+        @media (hover: none) {
+            .metric-card:hover, .product-card:hover, .btn-neon:hover { transform: none; }
         }
     </style>
     @stack('styles')
@@ -707,6 +782,9 @@
             <h5>Marketplace</h5>
             <small>{{ $currentStore?->name ?? 'Mercado Libre Colombia' }}</small>
         </div>
+        <button type="button" class="sidebar-close" id="sidebar-close" aria-label="Cerrar menú">
+            <i class="bi bi-x-lg"></i>
+        </button>
     </div>
 
     {{-- Nav --}}
@@ -831,6 +909,7 @@
     </div>
 
 </nav>
+<div id="sidebar-backdrop" aria-hidden="true"></div>
 
 {{-- ═══════════ MAIN ═══════════ --}}
 <div id="main-content">
@@ -838,7 +917,7 @@
     {{-- TOPBAR --}}
     <div class="topbar">
         <div class="d-flex align-items-center gap-3">
-            <button class="btn btn-sm d-md-none" id="sidebar-toggle"
+            <button type="button" class="btn btn-sm d-md-none" id="sidebar-toggle" aria-label="Abrir menú" aria-controls="sidebar" aria-expanded="false"
                     style="background:var(--control-bg);border:1px solid var(--border-glow);color:var(--text-dim);">
                 <i class="bi bi-list fs-5"></i>
             </button>
@@ -847,7 +926,7 @@
 
         <div class="topbar-right">
             @if(session('success'))
-                <span style="font-size:12px;background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.25);color:var(--success-fg);padding:4px 12px;border-radius:20px;">
+                <span class="d-none d-md-inline" style="font-size:12px;background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.25);color:var(--success-fg);padding:4px 12px;border-radius:20px;">
                     <i class="bi bi-check-circle me-1"></i>{{ session('success') }}
                 </span>
             @endif
@@ -859,13 +938,19 @@
             <div class="dropdown">
                 <button class="user-btn dropdown-toggle border-0" data-bs-toggle="dropdown">
                     <div class="user-avatar">{{ strtoupper(substr(auth()->user()?->name ?? 'U', 0, 1)) }}</div>
-                    {{ auth()->user()?->name ?? 'Usuario' }}
+                    <span class="d-none d-sm-inline">{{ auth()->user()?->name ?? 'Usuario' }}</span>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark-custom" style="min-width:180px;">
                     <li>
                         <a class="dropdown-item" href="#">
                             <i class="bi bi-person" style="font-size:13px;color:var(--neon-blue);"></i>
                             Perfil
+                        </a>
+                    </li>
+                    <li data-pwa-install hidden>
+                        <a class="dropdown-item" href="#">
+                            <i class="bi bi-download" style="font-size:13px;color:var(--neon-blue);"></i>
+                            Instalar app
                         </a>
                     </li>
                     <li><hr class="dropdown-divider"></li>
@@ -884,6 +969,14 @@
     </div>
 
     {{-- FLASH ALERTS --}}
+    @if(session('success'))
+        <div class="mx-4 mt-3 d-md-none">
+            <div class="flash-alert flash-success mb-0">
+                <i class="bi bi-check-circle-fill"></i>
+                {{ session('success') }}
+            </div>
+        </div>
+    @endif
     @if(session('error'))
         <div class="mx-4 mt-4">
             <div class="flash-alert flash-danger">
@@ -918,9 +1011,24 @@
 <script>
     axios.defaults.headers.common['X-CSRF-TOKEN'] = document.querySelector('meta[name="csrf-token"]').content;
 
-    document.getElementById('sidebar-toggle')?.addEventListener('click', () => {
-        document.getElementById('sidebar').classList.toggle('show');
-    });
+    (function () {
+        const sidebar = document.getElementById('sidebar');
+        const toggle  = document.getElementById('sidebar-toggle');
+        const mobile  = window.matchMedia('(max-width: 767.98px)');
+
+        const setOpen = (open) => {
+            sidebar.classList.toggle('show', open);
+            document.body.classList.toggle('sidebar-open', open);
+            toggle?.setAttribute('aria-expanded', String(open));
+        };
+
+        toggle?.addEventListener('click', () => setOpen(!sidebar.classList.contains('show')));
+        document.getElementById('sidebar-close')?.addEventListener('click', () => setOpen(false));
+        document.getElementById('sidebar-backdrop')?.addEventListener('click', () => setOpen(false));
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') setOpen(false); });
+        sidebar.querySelectorAll('a.nav-link').forEach((link) => link.addEventListener('click', () => { if (mobile.matches) setOpen(false); }));
+        mobile.addEventListener('change', (e) => { if (!e.matches) setOpen(false); });
+    })();
 
     window.themeColor = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
@@ -937,11 +1045,14 @@
             root.setAttribute('data-theme', next);
             root.setAttribute('data-bs-theme', next);
             try { localStorage.setItem('theme', next); } catch (e) {}
+            window.paintThemeColor(next);
             paintIcon();
             window.dispatchEvent(new CustomEvent('themechange', { detail: next }));
         });
     })();
 </script>
+@include('layouts._pwa-ios-help')
+@include('layouts._pwa-scripts')
 @stack('scripts')
 </body>
 </html>

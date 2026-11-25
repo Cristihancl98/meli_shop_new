@@ -2,8 +2,10 @@
 
 namespace App\Repositories;
 
+use App\Enums\ProductSort;
 use App\Interfaces\ProductRepositoryInterface;
 use App\Models\Product;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 
@@ -44,7 +46,26 @@ class ProductRepository implements ProductRepositoryInterface
             $query->where('price', '<=', $filters['max_price']);
         }
 
-        return $query->latest('updated_at')->paginate($perPage)->withQueryString();
+        return $this->applySort($query, $filters)->paginate($perPage)->withQueryString();
+    }
+
+    private function applySort(Builder $query, array $filters): Builder
+    {
+        $sort      = ProductSort::tryFrom($filters['sort'] ?? '') ?? ProductSort::DEFAULT;
+        $direction = in_array($filters['direction'] ?? null, ['asc', 'desc'], true) ? $filters['direction'] : $sort->defaultDirection();
+
+        match ($sort) {
+            ProductSort::Published => $query->orderByRaw("COALESCE(published_at, created_at) {$direction}"),
+            ProductSort::Updated   => $query->orderBy('updated_at', $direction),
+            ProductSort::Title     => $query->orderBy('title', $direction),
+            ProductSort::Sku       => $query->orderBy('sku', $direction),
+            ProductSort::Price     => $query->orderBy('price', $direction),
+            ProductSort::Stock     => $query->orderBy('stock', $direction),
+            ProductSort::Sold      => $query->orderBy('sold_quantity', $direction),
+            ProductSort::Status    => $query->orderBy('status', $direction),
+        };
+
+        return $query->orderBy('id', $direction);
     }
 
     public function find(int $id): ?Product
@@ -55,6 +76,11 @@ class ProductRepository implements ProductRepositoryInterface
     public function findByMeliItemId(string $meliItemId): ?Product
     {
         return Product::where('meli_item_id', $meliItemId)->first();
+    }
+
+    public function findByMeliItemIdIncludingArchived(string $meliItemId): ?Product
+    {
+        return Product::withTrashed()->where('meli_item_id', $meliItemId)->first();
     }
 
     public function findBySku(int $accountId, string $sku): Collection

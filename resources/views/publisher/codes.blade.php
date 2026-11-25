@@ -30,19 +30,21 @@
             @if($codes->isEmpty())
                 <div class="empty-state"><p>Sin códigos.</p></div>
             @else
-                <table class="table dark-table mb-0">
-                    <thead><tr><th>SKU</th><th>Estado</th><th>Cargado</th><th></th></tr></thead>
-                    <tbody>
-                        @foreach($codes as $code)
-                            <tr>
-                                <td><code class="dark">{{ $code->sku }}</code></td>
-                                <td><span class="badge badge-{{ $code->status === 'pending' ? 'pending' : ($code->status === 'published' ? 'active' : 'cancelled') }}">{{ $code->status }}</span></td>
-                                <td>{{ $code->created_at->format('d/m/Y H:i') }}</td>
-                                <td class="text-end"><a href="{{ route('publisher.create', ['sku' => $code->sku]) }}" class="btn-ghost text-decoration-none" style="padding:4px 10px;" title="Publicar"><i class="bi bi-cloud-upload"></i></a></td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+                <div class="table-responsive">
+                    <table class="table dark-table mb-0">
+                        <thead><tr><th>SKU</th><th>Estado</th><th>Cargado</th><th></th></tr></thead>
+                        <tbody>
+                            @foreach($codes as $code)
+                                <tr>
+                                    <td><code class="dark">{{ $code->sku }}</code></td>
+                                    <td><span class="badge badge-{{ $code->status === 'pending' ? 'pending' : ($code->status === 'published' ? 'active' : 'cancelled') }}">{{ $code->status }}</span></td>
+                                    <td>{{ $code->created_at->format('d/m/Y H:i') }}</td>
+                                    <td class="text-end"><a href="{{ route('publisher.create', ['sku' => $code->sku]) }}" class="btn-ghost text-decoration-none" style="padding:4px 10px;" title="Publicar"><i class="bi bi-cloud-upload"></i></a></td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
             @endif
         </div>
     </div>
