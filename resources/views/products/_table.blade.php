@@ -25,7 +25,7 @@
                         </td>
                         <td class="product-cell">
                             <a href="{{ route('products.show', $product) }}" class="product-cell-title" title="{{ $product->title }}">{{ $product->title }}</a>
-                            <small>{{ $product->meli_item_id ?? 'Sin publicar' }}@if($product->category) · {{ $product->category->name }}@endif</small>
+                            <small>@include('products._meli-link')@if($product->category) · {{ $product->category->name }}@endif</small>
                         </td>
                         <td>@if($product->sku)<code class="dark">{{ $product->sku }}</code>@else<span style="color:var(--text-faint);">—</span>@endif</td>
                         <td class="text-end num"><strong style="color:var(--text-strong);">${{ number_format($product->price, 0, ',', '.') }}</strong></td>
@@ -38,10 +38,10 @@
                             <div class="d-inline-flex gap-1">
                                 <a href="{{ route('products.show', $product) }}" class="btn-ghost" style="padding:5px 9px;" title="Ver"><i class="bi bi-eye"></i></a>
                                 <a href="{{ route('products.edit', $product) }}" class="btn-ghost" style="padding:5px 9px;color:var(--neon-blue);" title="Editar"><i class="bi bi-pencil"></i></a>
-                                @if($product->meli_item_id)
+                                @if($product->meli_item_id && auth()->user()->can('sync', $product))
                                     <form method="POST" action="{{ route('products.sync', $product) }}" class="m-0">
                                         @csrf
-                                        <button type="submit" class="btn-ghost" style="padding:5px 9px;color:var(--success-fg);" title="Sincronizar"><i class="bi bi-arrow-repeat"></i></button>
+                                        <button type="submit" class="btn-ghost" style="padding:5px 9px;color:var(--success-fg);" title="Consultar en Mercado Libre y actualizar estado"><i class="bi bi-arrow-repeat"></i></button>
                                     </form>
                                 @endif
                             </div>

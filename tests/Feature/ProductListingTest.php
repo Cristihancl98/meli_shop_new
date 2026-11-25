@@ -62,9 +62,35 @@ class ProductListingTest extends TestCase
             $response = $this->actingAs($admin)->get(route('products.index', ['view' => $view, 'sort' => 'stock', 'direction' => 'asc', 'page' => 2]));
 
             $response->assertOk()->assertSee('Mostrando 21–25', false);
+            $this->assertSame(2, substr_count($response->getContent(), 'class="products-pagination'), 'La paginación debe estar arriba y abajo.');
             $this->assertCount(5, $response->viewData('products')->items());
             $this->assertStringContainsString('sort=stock', $response->viewData('products')->url(1));
         }
+    }
+
+    public function test_mco_links_to_the_listing_in_mercado_libre_in_both_views(): void
+    {
+        [$admin, $account] = $this->adminWithAccount();
+        Product::factory()->create(['mercadolibre_account_id' => $account->id, 'meli_item_id' => 'MCO111', 'permalink' => 'https://articulo.mercadolibre.com.co/MCO-111-taladro-_JM']);
+        Product::factory()->create(['mercadolibre_account_id' => $account->id, 'meli_item_id' => 'MCO222', 'permalink' => null]);
+
+        foreach (['cards', 'table'] as $view) {
+            $this->actingAs($admin)->get(route('products.index', ['view' => $view]))
+                ->assertOk()
+                ->assertSee('href="https://articulo.mercadolibre.com.co/MCO-111-taladro-_JM" target="_blank"', false)
+                ->assertSee('href="https://articulo.mercadolibre.com.co/MCO-222" target="_blank"', false);
+        }
+    }
+
+    public function test_filters_panel_is_collapsible_and_shows_active_count(): void
+    {
+        [$admin] = $this->adminWithAccount();
+
+        $this->actingAs($admin)->get(route('products.index', ['search' => 'taladro', 'status' => 'active', 'sort' => 'price']))
+            ->assertOk()
+            ->assertSee('data-bs-target="#product-filters"', false)
+            ->assertSee('id="product-filters"', false)
+            ->assertSee('2 activos');
     }
 
     public function test_invalid_sort_is_rejected(): void

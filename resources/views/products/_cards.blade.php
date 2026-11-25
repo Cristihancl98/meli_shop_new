@@ -11,6 +11,7 @@
                 >
                 <div class="product-body">
                     <p class="product-title" title="{{ $product->title }}">{{ $product->title }}</p>
+                    <div class="product-meta mb-1">@include('products._meli-link')</div>
 
                     <div class="product-price">
                         ${{ number_format($product->price, 0, ',', '.') }}
@@ -38,10 +39,10 @@
                            class="btn-ghost flex-fill text-center" style="padding:7px;font-size:13px;color:var(--neon-blue);" title="Editar">
                             <i class="bi bi-pencil"></i>
                         </a>
-                        @if($product->meli_item_id)
+                        @if($product->meli_item_id && auth()->user()->can('sync', $product))
                             <form method="POST" action="{{ route('products.sync', $product) }}" class="flex-fill">
                                 @csrf
-                                <button type="submit" class="btn-ghost w-100" style="padding:7px;font-size:13px;color:var(--success-fg);" title="Sincronizar">
+                                <button type="submit" class="btn-ghost w-100" style="padding:7px;font-size:13px;color:var(--success-fg);" title="Consultar en Mercado Libre y actualizar estado">
                                     <i class="bi bi-arrow-repeat"></i>
                                 </button>
                             </form>

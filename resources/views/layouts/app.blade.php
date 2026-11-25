@@ -689,6 +689,22 @@
             font-size: 11px;
         }
 
+        /* Enlace al artículo en Mercado Libre (MCO…) */
+        .meli-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            color: var(--neon-blue);
+            font-family: var(--bs-font-monospace);
+            font-size: 11px;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+        .meli-link i { font-size: 10px; opacity: .7; }
+        .meli-link:hover { text-decoration: underline; }
+        .meli-link:hover i { opacity: 1; }
+        .meli-link-none { color: var(--text-faint); font-size: 11px; }
+
         /* Scrollbar */
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-track { background: transparent; }

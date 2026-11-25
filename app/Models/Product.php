@@ -61,6 +61,19 @@ class Product extends Model
         return in_array($status, self::STATUSES, true) ? $status : 'closed';
     }
 
+    public function getMeliUrlAttribute(): ?string
+    {
+        if ($this->permalink && str_starts_with($this->permalink, 'https://')) {
+            return $this->permalink;
+        }
+
+        if (!$this->meli_item_id) {
+            return null;
+        }
+
+        return 'https://articulo.mercadolibre.com.co/' . preg_replace('/^([A-Z]{3})-?(\d+)$/', '$1-$2', strtoupper($this->meli_item_id));
+    }
+
     public function getStatusLabelAttribute(): string
     {
         return match ($this->status) {

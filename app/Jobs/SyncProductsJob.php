@@ -7,12 +7,10 @@ use App\Events\SyncFailed;
 use App\Exceptions\MeliApiException;
 use App\Interfaces\ProductRepositoryInterface;
 use App\Interfaces\SyncLogRepositoryInterface;
-use App\Models\Category;
 use App\Models\MercadolibreAccount;
-use App\Models\Product;
 use App\Models\SyncLog;
+use App\Services\MeliItemMapper;
 use App\Services\MercadoLibreService;
-use Carbon\Carbon;
 use DateTimeInterface;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -45,10 +43,15 @@ class SyncProductsJob implements ShouldQueue
         return now()->addHours(2);
     }
 
-    public function handle(MercadoLibreService $meliService, ProductRepositoryInterface $repo, SyncLogRepositoryInterface $logs): void
-    {
+    public function handle(
+        MercadoLibreService $meliService,
+        ProductRepositoryInterface $repo,
+        SyncLogRepositoryInterface $logs,
+        MeliItemMapper $mapper
+    ): void {
         $log    = $this->startLog($logs);
         $counts = ['created' => 0, 'updated' => 0, 'skipped' => 0];
+        $seen   = [];
 
         try {
             $scrollId = null;
@@ -65,10 +68,17 @@ class SyncProductsJob implements ShouldQueue
 
                 foreach (array_chunk($itemIds, self::MULTIGET_LIMIT) as $chunk) {
                     foreach ($meliService->getItems($this->account, $chunk) as $entry) {
-                        $counts[$this->importEntry($repo, $entry)]++;
+                        $result = $this->importEntry($repo, $mapper, $entry);
+                        $counts[$result]++;
+
+                        if (isset($entry['body']['id'])) {
+                            $seen[MeliItemMapper::normalizeItemId($entry['body']['id'])] = true;
+                        }
                     }
                 }
             } while ($itemIds !== [] && $scrollId);
+
+            $counts['updated'] += $this->refreshUnseen($meliService, $repo, $mapper, $seen);
 
             $logs->update($log, [
                 'status'      => 'success',
@@ -97,7 +107,7 @@ class SyncProductsJob implements ShouldQueue
         return $existing ? $logs->update($existing, $data) : $logs->create($data);
     }
 
-    private function importEntry(ProductRepositoryInterface $repo, array $entry): string
+    private function importEntry(ProductRepositoryInterface $repo, MeliItemMapper $mapper, array $entry): string
     {
         $body = $entry['body'] ?? [];
 
@@ -106,18 +116,15 @@ class SyncProductsJob implements ShouldQueue
         }
 
         try {
-            $existing = $repo->findByMeliItemIdIncludingArchived($body['id']);
+            $existing = $repo->findByMeliItemIdIncludingArchived(MeliItemMapper::normalizeItemId($body['id']));
 
-            if ($existing?->trashed()) {
-                return 'skipped';
-            }
-
-            $data    = $this->mapMeliToLocal($body);
             $product = $existing
-                ? $repo->update($existing, $data)
-                : $repo->create($data + ['mercadolibre_account_id' => $this->account->id]);
+                ? $repo->update($existing, $mapper->toUpdateAttributes($body))
+                : $repo->create($mapper->toProductAttributes($body) + ['mercadolibre_account_id' => $this->account->id]);
 
-            ProductSynced::dispatch($product);
+            if (!$product->trashed()) {
+                ProductSynced::dispatch($product);
+            }
 
             return $existing ? 'updated' : 'created';
         } catch (\Throwable $e) {
@@ -127,42 +134,48 @@ class SyncProductsJob implements ShouldQueue
         }
     }
 
+    private function refreshUnseen(MercadoLibreService $meliService, ProductRepositoryInterface $repo, MeliItemMapper $mapper, array $seen): int
+    {
+        $unseen = [];
+        $repo->meliItemIdsChunked($this->account->id, self::MULTIGET_LIMIT, function (array $itemIds) use ($seen, &$unseen) {
+            foreach ($itemIds as $id) {
+                if (!isset($seen[MeliItemMapper::normalizeItemId($id)])) {
+                    $unseen[] = $id;
+                }
+            }
+        });
+
+        $refreshed = 0;
+
+        foreach (array_chunk($unseen, self::MULTIGET_LIMIT) as $chunk) {
+            foreach ($meliService->getItems($this->account, $chunk) as $i => $entry) {
+                $itemId  = MeliItemMapper::normalizeItemId($entry['body']['id'] ?? $chunk[$i] ?? '');
+                $product = $itemId !== '' ? $repo->findByMeliItemId($itemId) : null;
+
+                if (!$product) {
+                    continue;
+                }
+
+                $attributes = match ($entry['code'] ?? null) {
+                    200     => $mapper->toUpdateAttributes($entry['body']),
+                    404     => ['status' => 'closed', 'last_sync' => now()],
+                    default => null,
+                };
+
+                if ($attributes) {
+                    $repo->update($product, $attributes);
+                    $refreshed++;
+                }
+            }
+        }
+
+        return $refreshed;
+    }
+
     private function summary(array $counts): string
     {
         $summary = self::LOG_PREFIX . ": {$counts['created']} nuevas, {$counts['updated']} actualizadas";
 
         return $counts['skipped'] > 0 ? "{$summary}, {$counts['skipped']} omitidas" : $summary;
-    }
-
-    private function mapMeliToLocal(array $data): array
-    {
-        $categoryId = null;
-        if (!empty($data['category_id'])) {
-            $cat = Category::where('meli_category_id', $data['category_id'])->first();
-            $categoryId = $cat?->id;
-        }
-
-        $sku = collect($data['attributes'] ?? [])->firstWhere('id', 'SELLER_SKU')['value_name'] ?? null;
-
-        return [
-            'meli_item_id'    => $data['id'],
-            'meli_category_id'=> $data['category_id'] ?? null,
-            'published_at'    => isset($data['date_created']) ? Carbon::parse($data['date_created']) : null,
-            'sku'             => $sku,
-            'meli_attributes' => $data['attributes'] ?? null,
-            'pictures'        => array_values(array_filter(array_column($data['pictures'] ?? [], 'secure_url'))),
-            'variations'      => $data['variations'] ?? null,
-            'sold_quantity'   => $data['sold_quantity'] ?? 0,
-            'category_id'     => $categoryId,
-            'title'           => $data['title'] ?? '',
-            'price'           => $data['price'] ?? 0,
-            'stock'           => $data['available_quantity'] ?? 0,
-            'status'          => Product::normalizeMeliStatus($data['status'] ?? null),
-            'condition'       => $data['condition'] ?? 'new',
-            'listing_type_id' => $data['listing_type_id'] ?? null,
-            'thumbnail'       => $data['secure_thumbnail'] ?? $data['thumbnail'] ?? null,
-            'permalink'       => $data['permalink'] ?? null,
-            'last_sync'       => now(),
-        ];
     }
 }

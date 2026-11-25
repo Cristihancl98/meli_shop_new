@@ -42,17 +42,42 @@
     .import-success { color: var(--success-fg); background: rgba(16,185,129,.08); border-color: rgba(16,185,129,.2); }
     .import-error   { color: var(--danger-fg); background: rgba(239,68,68,.08); border-color: rgba(239,68,68,.2); }
     .btn-ghost:disabled { opacity: .6; cursor: progress; }
+
+    .filter-toggle {
+        display: flex; align-items: center; justify-content: space-between; gap: 12px;
+        width: 100%; padding: 0; border: 0; background: none;
+        color: var(--text-strong); font-size: 13px; font-weight: 600; text-align: left;
+    }
+    .filter-toggle:focus-visible { outline: 2px solid var(--neon-blue); outline-offset: 4px; border-radius: 6px; }
+    .filter-count {
+        margin-left: 8px; padding: 2px 8px; border-radius: 999px;
+        font-size: 11px; font-weight: 600;
+        color: var(--neon-blue); background: var(--active-bg); border: 1px solid var(--border-glow);
+    }
+    .filter-chevron { color: var(--text-muted); transition: transform .2s; }
+    .products-pagination .pagination { margin-bottom: 0; }
+    .products-pagination nav p.small { display: none; }
+    .filter-toggle[aria-expanded="false"] .filter-chevron { transform: rotate(180deg); }
     .spin { display: inline-block; animation: spin 1s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
     @media (prefers-reduced-motion: reduce) { .spin { animation: none; } }
 </style>
 @endpush
 
+@push('scripts')
+<script>
+    (function () {
+        const panel = document.getElementById('product-filters');
+        if (!panel) return;
+        const remember = (state) => { try { localStorage.setItem('products.filters', state); } catch (e) {} };
+        panel.addEventListener('shown.bs.collapse', () => remember('open'));
+        panel.addEventListener('hidden.bs.collapse', () => remember('closed'));
+    })();
+</script>
 @if($importStatus?->inProgress())
-    @push('scripts')
     <script>setTimeout(() => location.reload(), 15000);</script>
-    @endpush
 @endif
+@endpush
 
 @section('content')
 
@@ -115,7 +140,29 @@
 
 {{-- FILTERS --}}
 <div class="filter-panel mb-4">
-    <form method="GET" action="{{ route('products.index') }}">
+    <button type="button" class="filter-toggle" id="filters-toggle" data-bs-toggle="collapse" data-bs-target="#product-filters"
+            aria-expanded="true" aria-controls="product-filters">
+        <span>
+            <i class="bi bi-funnel me-1"></i> Filtros y orden
+            @if($activeFilters > 0)
+                <span class="filter-count" title="Filtros activos">{{ $activeFilters }} activo{{ $activeFilters > 1 ? 's' : '' }}</span>
+            @endif
+        </span>
+        <i class="bi bi-chevron-up filter-chevron" aria-hidden="true"></i>
+    </button>
+    <div class="collapse show" id="product-filters">
+    <script>
+        (function () {
+            var saved = null;
+            try { saved = localStorage.getItem('products.filters'); } catch (e) {}
+            var open = saved ? saved === 'open' : !window.matchMedia('(max-width: 767.98px)').matches;
+            if (!open) {
+                document.getElementById('product-filters').classList.remove('show');
+                document.getElementById('filters-toggle').setAttribute('aria-expanded', 'false');
+            }
+        })();
+    </script>
+    <form method="GET" action="{{ route('products.index') }}" class="pt-3">
         <input type="hidden" name="view" value="{{ $viewMode }}">
         <div class="row g-3 align-items-end">
             <div class="col-12 col-md-6 col-lg-3">
@@ -178,6 +225,7 @@
             </div>
         </div>
     </form>
+    </div>
 </div>
 
 {{-- NO ACCOUNT WARNING --}}
@@ -206,15 +254,11 @@
         @endif
     </div>
 @else
+    @include('products._pagination', ['position' => 'top'])
+
     @include($viewMode === 'table' ? 'products._table' : 'products._cards')
 
-    <div class="d-flex justify-content-between align-items-center mt-4">
-        <p style="font-size:12px;color:var(--text-muted);margin:0;">
-            Mostrando {{ $products->firstItem() }}–{{ $products->lastItem() }}
-            de {{ $products->total() }} productos
-        </p>
-        {{ $products->withQueryString()->links('pagination::bootstrap-5') }}
-    </div>
+    @include('products._pagination', ['position' => 'bottom'])
 @endif
 
 @endsection

@@ -69,7 +69,7 @@
             <a href="{{ route('products.edit', $product) }}" class="btn-neon flex-fill text-center">
                 <i class="bi bi-pencil me-1"></i> Editar
             </a>
-            @if($product->meli_item_id)
+            @if($product->meli_item_id && auth()->user()->can('sync', $product))
                 <form method="POST" action="{{ route('products.sync', $product) }}" class="flex-fill">
                     @csrf
                     <button type="submit" class="btn-ghost w-100" style="color:var(--success-fg);">
@@ -188,7 +188,7 @@
                     </h6>
                     <div class="stat-row">
                         <span class="label">ID MeLi</span>
-                        <code class="dark">{{ $product->meli_item_id ?? 'Sin publicar' }}</code>
+                        <code class="dark">@include('products._meli-link')</code>
                     </div>
                     <div class="stat-row">
                         <span class="label">Tipo publicación</span>

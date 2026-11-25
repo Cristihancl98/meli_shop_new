@@ -5,6 +5,7 @@ namespace App\Services;
 use App\DTOs\CatalogImportStatusDTO;
 use App\DTOs\ProductDTO;
 use App\Events\ProductSynced;
+use App\Exceptions\MeliApiException;
 use App\Interfaces\ProductRepositoryInterface;
 use App\Interfaces\SyncLogRepositoryInterface;
 use App\Jobs\SyncProductsJob;
@@ -22,7 +23,8 @@ class ProductService
     public function __construct(
         private readonly ProductRepositoryInterface $productRepository,
         private readonly MercadoLibreService $meliService,
-        private readonly SyncLogRepositoryInterface $syncLogRepository
+        private readonly SyncLogRepositoryInterface $syncLogRepository,
+        private readonly MeliItemMapper $itemMapper
     ) {}
 
     public function startCatalogImport(MercadolibreAccount $account): bool
@@ -172,34 +174,48 @@ class ProductService
         return $this->productRepository->delete($product);
     }
 
+    public function findForAccount(MercadolibreAccount $account, int $id): ?Product
+    {
+        return $this->productRepository->findForAccount($account->id, $id);
+    }
+
     public function syncFromMeli(MercadolibreAccount $account, Product $product): Product
     {
-        $log = SyncLog::create([
+        $itemId = MeliItemMapper::normalizeItemId((string) $product->meli_item_id);
+        $log    = $this->syncLogRepository->create([
             'mercadolibre_account_id' => $account->id,
             'type'                    => 'products',
             'status'                  => 'running',
             'started_at'              => now(),
+            'message'                 => "Sincronización de {$itemId}",
         ]);
 
         try {
-            $meliData = $this->meliService->getProduct($account, $product->meli_item_id);
+            $response = $this->meliService->getItems($account, [$itemId]);
+            $entry    = is_array($response) ? ($response[0] ?? null) : null;
 
-            $updated = $this->productRepository->update($product, [
-                'title'     => $meliData['title'] ?? $product->title,
-                'price'     => $meliData['price'] ?? $product->price,
-                'stock'     => $meliData['available_quantity'] ?? $product->stock,
-                'status'    => $meliData['status'] ?? $product->status,
-                'thumbnail' => $meliData['thumbnail'] ?? $product->thumbnail,
-                'permalink' => $meliData['permalink'] ?? $product->permalink,
-                'last_sync' => now(),
+            if (!is_array($entry) || !isset($entry['code'])) {
+                throw MeliApiException::fromResponse('consultar publicación', is_array($response) ? $response : []);
+            }
+
+            $attributes = match (true) {
+                $entry['code'] === 200 && !empty($entry['body']['id']) => $this->itemMapper->toUpdateAttributes($entry['body']),
+                $entry['code'] === 404                                 => ['status' => 'closed', 'last_sync' => now()],
+                default => throw MeliApiException::fromResponse('consultar publicación', $entry['body'] ?? []),
+            };
+
+            $updated = $this->productRepository->update($product, $attributes);
+
+            $this->syncLogRepository->update($log, [
+                'status'      => 'success',
+                'finished_at' => now(),
+                'message'     => "Sincronización de {$itemId}: {$updated->status}",
             ]);
-
-            $log->update(['status' => 'success', 'finished_at' => now()]);
             event(new ProductSynced($updated));
 
             return $updated;
         } catch (\Throwable $e) {
-            $log->update(['status' => 'error', 'message' => $e->getMessage(), 'finished_at' => now()]);
+            $this->syncLogRepository->update($log, ['status' => 'error', 'message' => "Sincronización de {$itemId}: {$e->getMessage()}", 'finished_at' => now()]);
             throw $e;
         }
     }

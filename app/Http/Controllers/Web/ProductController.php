@@ -39,9 +39,10 @@ class ProductController extends Controller
         $direction = $request->validated('direction') ?? $sort->defaultDirection();
         $sorts     = ProductSort::cases();
 
-        $importStatus = $account ? $this->productService->catalogImportStatus($account) : null;
+        $importStatus  = $account ? $this->productService->catalogImportStatus($account) : null;
+        $activeFilters = count(array_diff_key($request->filters(), array_flip(['sort', 'direction'])));
 
-        return view('products.index', compact('products', 'categories', 'account', 'viewMode', 'sort', 'direction', 'sorts', 'importStatus'));
+        return view('products.index', compact('products', 'categories', 'account', 'viewMode', 'sort', 'direction', 'sorts', 'importStatus', 'activeFilters'));
     }
 
     public function syncAll(): RedirectResponse
@@ -133,13 +134,18 @@ class ProductController extends Controller
 
     public function sync(int $id): RedirectResponse
     {
-        $user    = auth()->user();
-        $account = $this->accountRepository->findSelectedByUser($user->id, session('active_meli_account_id'));
-        $product = $this->productService->find($id);
+        $account = $this->accountRepository->findSelectedByUser(auth()->id(), session('active_meli_account_id'));
+        $product = $account ? $this->productService->findForAccount($account, $id) : null;
         abort_if(!$product || !$product->meli_item_id, 404);
 
-        $this->productService->syncFromMeli($account, $product);
+        $this->authorize('sync', $product);
 
-        return back()->with('success', 'Producto sincronizado desde Mercado Libre.');
+        $before  = $product->status_label;
+        $product = $this->productService->syncFromMeli($account, $product);
+        $after   = $product->status_label;
+
+        return back()->with('success', $before === $after
+            ? "{$product->meli_item_id} sincronizado: sigue {$after} en Mercado Libre."
+            : "{$product->meli_item_id} sincronizado: estado actualizado de {$before} a {$after}.");
     }
 }

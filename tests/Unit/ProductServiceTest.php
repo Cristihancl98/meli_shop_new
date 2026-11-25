@@ -8,6 +8,7 @@ use App\Interfaces\ProductRepositoryInterface;
 use App\Interfaces\SyncLogRepositoryInterface;
 use App\Models\MercadolibreAccount;
 use App\Models\Product;
+use App\Services\MeliItemMapper;
 use App\Services\MercadoLibreService;
 use App\Services\ProductService;
 use Illuminate\Support\Facades\Event;
@@ -30,7 +31,7 @@ class ProductServiceTest extends TestCase
 
         $this->productRepo = Mockery::mock(ProductRepositoryInterface::class);
         $this->meliService = Mockery::mock(MercadoLibreService::class);
-        $this->service     = new ProductService($this->productRepo, $this->meliService, app(SyncLogRepositoryInterface::class));
+        $this->service     = new ProductService($this->productRepo, $this->meliService, app(SyncLogRepositoryInterface::class), app(MeliItemMapper::class));
     }
 
     protected function tearDown(): void
@@ -170,24 +171,26 @@ class ProductServiceTest extends TestCase
             'meli_item_id'            => 'MCO123456',
         ]);
 
-        $meliResponse = [
+        $meliResponse = [['code' => 200, 'body' => [
+            'id'                 => 'MCO123456',
             'title'              => 'Updated Title',
             'price'              => 200000,
             'available_quantity' => 20,
-            'status'             => 'active',
+            'status'             => 'paused',
             'thumbnail'          => 'https://img.meli.com/test.jpg',
             'permalink'          => 'https://articulo.meli.com/test',
-        ];
+        ]]];
 
         $this->meliService
-            ->shouldReceive('getProduct')
+            ->shouldReceive('getItems')
             ->once()
-            ->with($this->account, 'MCO123456')
+            ->with($this->account, ['MCO123456'])
             ->andReturn($meliResponse);
 
         $this->productRepo
             ->shouldReceive('update')
             ->once()
+            ->withArgs(fn ($model, array $data) => $data['status'] === 'paused' && $data['stock'] === 20 && $data['title'] === 'Updated Title')
             ->andReturn($product);
 
         $this->service->syncFromMeli($this->account, $product);
