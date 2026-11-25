@@ -40,9 +40,22 @@
     </a>
 </div>
 
+@if($batchItem)
+    <div class="flash-alert {{ $batchItem->error ? 'flash-danger' : 'flash-success' }} mb-4">
+        <i class="bi bi-stack"></i>
+        <div>
+            Corrigiendo <strong>{{ $batchItem->sku }}</strong> del
+            <a href="{{ route('publisher.batches.show', $batchItem->publish_batch_id) }}" style="color:inherit;text-decoration:underline;">lote #{{ $batchItem->publish_batch_id }}</a>.
+            Al publicar, el artículo quedará marcado como publicado en el lote.
+            @if($batchItem->error)<div class="mt-1"><strong>Último error:</strong> {{ $batchItem->error }}</div>@endif
+        </div>
+    </div>
+@endif
+
 <form method="POST" action="{{ route('publisher.store') }}">
     @csrf
     <input type="hidden" name="sku" value="{{ $sku }}">
+    @if($batchItem)<input type="hidden" name="batch_item_id" value="{{ $batchItem->id }}">@endif
 
     <div class="row g-4">
         <div class="col-lg-8">

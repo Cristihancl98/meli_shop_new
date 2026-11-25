@@ -35,6 +35,12 @@ Catálogo externo: `ExternalCatalogRepositoryInterface` → `MongoCatalogReposit
 
 ---
 
+## Publicación masiva por SKU (lotes)
+
+`PublishBatchService` + tablas de tienda `publish_batches` / `publish_batch_items` (estado `BatchItemStatus`). Flujo: se pegan SKU → `ScrapeBatchItemJob` por SKU (MongoDB y, si falta, scraper **desde el servidor** vía `CatalogService`; tras llamar al scraper se vuelve a leer MongoDB) → el usuario revisa y marca → `PublishBatchItemJob` publica con `ProductPublishingService::publish` (mismos valores que el formulario individual) y guarda MCO o el motivo del error. "Corregir" abre `publisher.create?batch_item=ID` con los datos del lote; al publicar, el ítem queda publicado y se vuelve al lote. Máx. `PublishBatchService::MAX_SKUS` SKU por lote. La vieja pestaña "Códigos (API)" (`bulk_publish_codes`) solo guarda códigos para la API externa.
+
+---
+
 ## Versión visible (OBLIGATORIO en cada cambio)
 
 El archivo `VERSION` (raíz de `meli/`) se muestra en el pie del menú lateral (`$appVersion`, compartido por un view composer en `AppServiceProvider` que lee el archivo en cada petición, así no depende de `config:cache`) para comprobar si la web ya tiene los cambios. **Cada vez que se modifique código, subir la versión** (semver): PATCH para correcciones, MINOR para funcionalidades nuevas, MAJOR para cambios incompatibles.

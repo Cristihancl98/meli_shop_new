@@ -53,6 +53,7 @@ class PublishProductRequest extends FormRequest
             'extra_attributes'       => ['nullable', 'array'],
             'extra_attributes.*.id'    => ['required', 'string', 'max:60'],
             'extra_attributes.*.value' => ['required', 'string', 'max:255'],
+            'batch_item_id'          => ['nullable', 'integer'],
         ];
     }
 

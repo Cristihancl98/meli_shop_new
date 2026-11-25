@@ -30,7 +30,11 @@ class CatalogService
             return $this->toLookup($document, self::SOURCE_CATALOG);
         }
 
-        $scraped = $allowLiveScraping && $this->scrapingEnabled() ? $this->scrapeSku($sku) : null;
+        if (!$allowLiveScraping || !$this->scrapingEnabled()) {
+            return null;
+        }
+
+        $scraped = $this->scrapeSku($sku) ?? $this->findInCatalog($sku);
 
         return $scraped ? $this->toLookup($scraped, self::SOURCE_SCRAPER) : null;
     }

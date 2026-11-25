@@ -9,6 +9,7 @@ use App\Http\Controllers\Web\MeliAuthController;
 use App\Http\Controllers\Web\NotificationController;
 use App\Http\Controllers\Web\PostSaleController;
 use App\Http\Controllers\Web\ProductListingController;
+use App\Http\Controllers\Web\PublishBatchController;
 use App\Http\Controllers\Web\PublisherController;
 use App\Http\Controllers\Web\QuestionController;
 use App\Http\Controllers\Web\SettingController;
@@ -51,6 +52,11 @@ Route::middleware('web.auth')->group(function () {
     Route::get('publisher/catalog', [PublisherController::class, 'catalog'])->name('publisher.catalog');
     Route::get('publisher/codes', [PublisherController::class, 'codes'])->name('publisher.codes');
     Route::post('publisher/codes', [PublisherController::class, 'storeCodes'])->name('publisher.codes.store');
+    Route::get('publisher/batches', [PublishBatchController::class, 'index'])->name('publisher.batches.index');
+    Route::post('publisher/batches', [PublishBatchController::class, 'store'])->name('publisher.batches.store');
+    Route::get('publisher/batches/{id}', [PublishBatchController::class, 'show'])->whereNumber('id')->name('publisher.batches.show');
+    Route::post('publisher/batches/{id}/publish', [PublishBatchController::class, 'publish'])->whereNumber('id')->name('publisher.batches.publish');
+    Route::post('publisher/batches/{id}/rescrape', [PublishBatchController::class, 'rescrape'])->whereNumber('id')->name('publisher.batches.rescrape');
 
     Route::post('products/{id}/pause', [ProductListingController::class, 'pause'])->whereNumber('id')->name('products.pause');
     Route::post('products/{id}/activate', [ProductListingController::class, 'activate'])->whereNumber('id')->name('products.activate');

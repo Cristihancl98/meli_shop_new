@@ -11,6 +11,7 @@ use App\Interfaces\PostSaleMessageRepositoryInterface;
 use App\Interfaces\QuestionRepositoryInterface;
 use App\Interfaces\StoreRepositoryInterface;
 use App\Interfaces\StoreSettingRepositoryInterface;
+use App\Interfaces\PublishBatchRepositoryInterface;
 use App\Interfaces\SyncLogRepositoryInterface;
 use App\Interfaces\UserRepositoryInterface;
 use App\Interfaces\MercadolibreAccountRepositoryInterface;
@@ -25,6 +26,7 @@ use App\Repositories\PostSaleMessageRepository;
 use App\Repositories\QuestionRepository;
 use App\Repositories\StoreRepository;
 use App\Repositories\StoreSettingRepository;
+use App\Repositories\PublishBatchRepository;
 use App\Repositories\SyncLogRepository;
 use App\Services\TenantManager;
 use Illuminate\Queue\Events\JobProcessing;
@@ -73,6 +75,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(StoreRepositoryInterface::class, StoreRepository::class);
         $this->app->bind(StoreSettingRepositoryInterface::class, StoreSettingRepository::class);
         $this->app->bind(SyncLogRepositoryInterface::class, SyncLogRepository::class);
+        $this->app->bind(PublishBatchRepositoryInterface::class, PublishBatchRepository::class);
         $this->app->singleton(TenantManager::class);
     }
 

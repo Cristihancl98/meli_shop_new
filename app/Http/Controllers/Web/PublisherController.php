@@ -16,6 +16,7 @@ use App\Services\BulkPublishService;
 use App\Services\CatalogService;
 use App\Services\MeliCategoryService;
 use App\Services\PricingService;
+use App\Services\PublishBatchService;
 use App\Traits\ApiResponses;
 use App\Services\ProductPublishingService;
 use App\Traits\ResolvesMeliAccount;
@@ -33,7 +34,8 @@ class PublisherController extends Controller
         private readonly CatalogService $catalogService,
         private readonly BulkPublishService $bulkPublishService,
         private readonly PricingService $pricingService,
-        private readonly MeliCategoryService $categoryService
+        private readonly MeliCategoryService $categoryService,
+        private readonly PublishBatchService $batchService
     ) {}
 
     public function price(CalculatePriceRequest $request): JsonResponse
@@ -58,8 +60,15 @@ class PublisherController extends Controller
         $lookupError       = null;
         $suggestedCategory = null;
         $scraperUrl        = null;
+        $batchItem         = $account && $request->filled('batch_item')
+            ? $this->batchService->itemForCorrection($account, (int) $request->query('batch_item'))
+            : null;
 
-        if ($sku !== '') {
+        if ($batchItem) {
+            $sku               = $batchItem->sku;
+            $lookup            = $batchItem->data;
+            $suggestedCategory = $batchItem->data['suggested_category'] ?? null;
+        } elseif ($sku !== '') {
             try {
                 $lookup            = $this->publishingService->lookupSku($account, $sku, true);
                 $suggestedCategory = $lookup['categoria_meli']
@@ -75,7 +84,7 @@ class PublisherController extends Controller
             }
         }
 
-        return view('publisher.create', compact('account', 'sku', 'lookup', 'lookupError', 'suggestedCategory', 'scraperUrl'));
+        return view('publisher.create', compact('account', 'sku', 'lookup', 'lookupError', 'suggestedCategory', 'scraperUrl', 'batchItem'));
     }
 
     public function categories(CategoryLevelRequest $request): JsonResponse
@@ -99,9 +108,14 @@ class PublisherController extends Controller
             return back()->withErrors(['account' => 'Debes vincular una cuenta de Mercado Libre primero.']);
         }
 
-        $product = $this->publishingService->publish($account, PublishProductDTO::fromArray($request->validated()), $request->user());
+        $product   = $this->publishingService->publish($account, PublishProductDTO::fromArray($request->validated()), $request->user());
+        $batchItem = $request->filled('batch_item_id')
+            ? $this->batchService->markPublishedFromEditor($account, (int) $request->validated('batch_item_id'), $product)
+            : null;
 
-        return redirect()->route('products.show', $product->id)->with('success', "Publicado en Mercado Libre: {$product->meli_item_id}");
+        return $batchItem
+            ? redirect()->route('publisher.batches.show', $batchItem->publish_batch_id)->with('success', "{$batchItem->sku} publicado en Mercado Libre: {$product->meli_item_id}")
+            : redirect()->route('products.show', $product->id)->with('success', "Publicado en Mercado Libre: {$product->meli_item_id}");
     }
 
     public function catalog(Request $request): View
