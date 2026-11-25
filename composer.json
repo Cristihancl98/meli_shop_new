@@ -12,7 +12,7 @@
         "laravel/tinker": "^2.10.1",
         "league/flysystem-aws-s3-v3": "^3.34",
         "maatwebsite/excel": "^3.1",
-        "mongodb/laravel-mongodb": "^5.11",
+        "mongodb/mongodb": "^1.20",
         "tymon/jwt-auth": "^2.3"
     },
     "require-dev": {
@@ -85,6 +85,23 @@
         "allow-plugins": {
             "pestphp/pest-plugin": true,
             "php-http/discovery": true
+        },
+        "platform": {
+            "ext-mongodb": "1.20.1"
+        },
+        "policy": {
+            "advisories": {
+                "ignore-id": [
+                    "PKSA-y93m-jgy6-r9ns",
+                    "PKSA-61k5-cqr9-b8b4"
+                ]
+            }
+        },
+        "audit": {
+            "ignore": {
+                "PKSA-y93m-jgy6-r9ns": "GridFS no se usa",
+                "PKSA-61k5-cqr9-b8b4": "Nombres de BD/colección fijos, no vienen del usuario"
+            }
         }
     },
     "minimum-stability": "stable",

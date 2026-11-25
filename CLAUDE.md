@@ -31,7 +31,7 @@ Modelos landlord (`Store`, `StoreMeliAccount`) declaran `protected $connection =
 
 Settings: `App\Enums\SettingKey` define cada clave; `isAccountScoped()` decide si se guarda por cuenta (`AccountSettingRepository`) o por tienda (`StoreSettingRepository`). Valores por defecto en `config/store_defaults.php`.
 
-Catálogo externo: `ExternalCatalogRepositoryInterface` → `MongoCatalogRepository` (conexión `mongodb`, `MONGODB_URI`). En tests se reemplaza por `tests/Fakes/FakeCatalogRepository`.
+Catálogo externo: `ExternalCatalogRepositoryInterface` → `MongoCatalogRepository` (librería oficial `mongodb/mongodb` 1.20 directa, sin `laravel-mongodb`; lee `MONGODB_URI`/`MONGODB_DATABASE` de `database.connections.mongodb`). Hostinger tiene `ext-mongodb` 1.20.1 y ninguna versión de `laravel-mongodb` compatible con Laravel 12 la acepta: por eso `composer.json` fija `config.platform.ext-mongodb=1.20.1` e ignora dos advisories de 1.20 que no aplican (GridFS no se usa; nombres de BD/colección fijos). El Dockerfile instala la misma versión. En tests se reemplaza por `tests/Fakes/FakeCatalogRepository`.
 
 ---
 
