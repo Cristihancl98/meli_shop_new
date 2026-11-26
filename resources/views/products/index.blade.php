@@ -112,6 +112,13 @@
     </div>
 </div>
 
+@if($pendingReviews > 0)
+    <a href="{{ route('products.price-reviews') }}" class="import-status import-pending mb-3 text-decoration-none">
+        <i class="bi bi-exclamation-diamond"></i>
+        <span><strong>{{ $pendingReviews }}</strong> publicación(es) requieren revisión de precio o estado frente a Amazon. Ver revisión →</span>
+    </a>
+@endif
+
 @if($importStatus)
     <div class="import-status import-{{ $importStatus->state }} mb-4" role="status">
         @switch($importStatus->state)

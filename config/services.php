@@ -35,6 +35,10 @@ return [
         ],
     ],
 
+    'scraping' => [
+        'server_url' => env('SCRAPING_SERVER_URL'),
+    ],
+
     'mercadolibre' => [
         'client_id'     => env('MELI_CLIENT_ID'),
         'client_secret' => env('MELI_CLIENT_SECRET'),

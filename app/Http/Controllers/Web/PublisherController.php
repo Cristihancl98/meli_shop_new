@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Web;
 use App\DTOs\PublishProductDTO;
 use App\Exceptions\BusinessRuleException;
 use App\Exceptions\ScrapingRequiredException;
+use App\DTOs\CatalogSearchDTO;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Catalog\FilterCatalogRequest;
 use App\Http\Requests\BulkPublish\ListBulkCodesRequest;
 use App\Http\Requests\Meli\CategoryLevelRequest;
 use App\Http\Requests\Pricing\CalculatePriceRequest;
@@ -15,6 +17,7 @@ use App\Models\Product;
 use App\Services\BulkPublishService;
 use App\Services\CatalogService;
 use App\Services\MeliCategoryService;
+use App\Services\CatalogSearchService;
 use App\Services\PricingService;
 use App\Services\PublishBatchService;
 use App\Traits\ApiResponses;
@@ -35,7 +38,8 @@ class PublisherController extends Controller
         private readonly BulkPublishService $bulkPublishService,
         private readonly PricingService $pricingService,
         private readonly MeliCategoryService $categoryService,
-        private readonly PublishBatchService $batchService
+        private readonly PublishBatchService $batchService,
+        private readonly CatalogSearchService $catalogSearchService
     ) {}
 
     public function price(CalculatePriceRequest $request): JsonResponse
@@ -118,27 +122,27 @@ class PublisherController extends Controller
             : redirect()->route('products.show', $product->id)->with('success', "Publicado en Mercado Libre: {$product->meli_item_id}");
     }
 
-    public function catalog(Request $request): View
+    public function catalog(FilterCatalogRequest $request): View
     {
         $this->authorize('publish', Product::class);
 
-        $mode    = $request->query('mode', 'title');
-        $term    = trim((string) $request->query('q', ''));
-        $results = [];
-        $error   = null;
+        $criteria = $request->searched() ? $request->criteria() : CatalogSearchDTO::fromArray(['only_publishable' => true]);
+        $result   = null;
+        $error    = null;
 
-        if (mb_strlen($term) >= 2) {
+        if ($request->searched()) {
             try {
-                $results = $mode === 'category'
-                    ? $this->catalogService->findByCategory($term)
-                    : $this->catalogService->searchByTitle($term);
+                $result = $this->catalogSearchService->search($criteria, $this->currentAccount());
             } catch (\Throwable $e) {
                 report($e);
                 $error = 'No fue posible consultar el catálogo. Verifica la conexión MongoDB.';
             }
         }
 
-        return view('publisher.catalog', compact('mode', 'term', 'results', 'error'));
+        $titleLimit = CatalogSearchService::MELI_TITLE_LIMIT;
+        $maxResults = CatalogSearchService::MAX_RESULTS;
+
+        return view('publisher.catalog', compact('criteria', 'result', 'error', 'titleLimit', 'maxResults'));
     }
 
     public function codes(ListBulkCodesRequest $request): View

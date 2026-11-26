@@ -8,6 +8,7 @@ use App\Http\Controllers\Web\DashboardController;
 use App\Http\Controllers\Web\MeliAuthController;
 use App\Http\Controllers\Web\NotificationController;
 use App\Http\Controllers\Web\PostSaleController;
+use App\Http\Controllers\Web\PriceReviewController;
 use App\Http\Controllers\Web\ProductListingController;
 use App\Http\Controllers\Web\PublishBatchController;
 use App\Http\Controllers\Web\PublisherController;
@@ -84,6 +85,10 @@ Route::middleware('web.auth')->group(function () {
     Route::put('users/{id}', [UserController::class, 'update'])->whereNumber('id')->name('users.update');
 
     // Productos
+    Route::get('products/price-reviews', [PriceReviewController::class, 'index'])->name('products.price-reviews');
+    Route::post('products/price-reviews/run', [PriceReviewController::class, 'run'])->name('products.price-reviews.run');
+    Route::post('products/{id}/price-review/apply', [PriceReviewController::class, 'apply'])->whereNumber('id')->name('products.price-review.apply');
+    Route::post('products/{id}/price-review/dismiss', [PriceReviewController::class, 'dismiss'])->whereNumber('id')->name('products.price-review.dismiss');
     Route::resource('products', ProductController::class);
     Route::post('products/sync', [ProductController::class, 'syncAll'])->name('products.sync-all');
     Route::post('products/{id}/sync', [ProductController::class, 'sync'])->name('products.sync');

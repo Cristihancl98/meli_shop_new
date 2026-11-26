@@ -812,8 +812,11 @@
         </a>
 
         <div class="nav-section">Gestión</div>
-        <a href="{{ route('products.index') }}" class="nav-link {{ request()->routeIs('products.*') ? 'active' : '' }}">
+        <a href="{{ route('products.index') }}" class="nav-link {{ request()->routeIs('products.*') && !request()->routeIs('products.price-review*') ? 'active' : '' }}">
             <i class="bi bi-box-seam"></i> Productos
+        </a>
+        <a href="{{ route('products.price-reviews') }}" class="nav-link {{ request()->routeIs('products.price-review*') ? 'active' : '' }}">
+            <i class="bi bi-currency-exchange"></i> Revisión de precios
         </a>
         <a href="{{ route('orders.index') }}" class="nav-link {{ request()->routeIs('orders.*') ? 'active' : '' }}">
             <i class="bi bi-receipt"></i> Ventas

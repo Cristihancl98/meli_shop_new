@@ -23,3 +23,6 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 /storage/framework/.docker-ready
+
+# Ajustes de Docker solo para este PC
+docker-compose.override.yml

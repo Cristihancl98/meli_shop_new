@@ -13,19 +13,43 @@ class MongoCatalogRepository implements ExternalCatalogRepositoryInterface
     private const SETTINGS_COLLECTION = 'mconfiguraciones';
     private const MAX_RESULTS         = 200;
     private const TYPE_MAP            = ['root' => 'array', 'document' => 'array', 'array' => 'array'];
+    private const INVISIBLE_PREFIX    = '[\\x{200E}\\x{200F}\\x{FEFF}\\s]*';
 
     private ?Client $client = null;
 
     public function findBySku(string $sku): ?array
     {
-        $invisiblePrefix = '[\\x{200E}\\x{200F}\\x{FEFF}\\s]*';
-
         $doc = $this->collection(self::PRODUCTS_COLLECTION)->findOne(
-            ['sku' => new Regex('^' . $invisiblePrefix . preg_quote(trim($sku), '/') . '\\s*$', 'i')],
+            ['sku' => new Regex('^' . self::INVISIBLE_PREFIX . preg_quote(trim($sku), '/') . '\\s*$', 'i')],
             ['sort' => ['fechaInserccion' => -1]]
         );
 
         return $doc ? $this->normalize($doc) : null;
+    }
+
+    public function findManyBySkus(array $skus): array
+    {
+        $patterns = array_map(
+            fn (string $sku) => new Regex('^' . self::INVISIBLE_PREFIX . preg_quote(trim($sku), '/') . '\\s*$', 'i'),
+            array_values(array_filter($skus, fn ($sku) => trim((string) $sku) !== ''))
+        );
+
+        if ($patterns === []) {
+            return [];
+        }
+
+        $documents = [];
+        $cursor    = $this->collection(self::PRODUCTS_COLLECTION)->find(
+            ['sku' => ['$in' => $patterns]],
+            ['sort' => ['fechaInserccion' => 1]]
+        );
+
+        foreach ($cursor as $doc) {
+            $doc = $this->normalize($doc);
+            $documents[mb_strtoupper($doc['sku'] ?? '')] = $doc;
+        }
+
+        return $documents;
     }
 
     public function findByCategory(string $meliCategoryId): array
@@ -48,6 +72,24 @@ class MongoCatalogRepository implements ExternalCatalogRepositoryInterface
         $value = $doc['valor'] ?? null;
 
         return is_numeric($value) ? (float) $value : null;
+    }
+
+    public function iterate(string $mode, string $term = ''): iterable
+    {
+        $filter = match ($mode) {
+            'title'    => ['titulo' => new Regex(preg_quote($term, '/'), 'i')],
+            'category' => ['categoriaMeli' => $term],
+            default    => [],
+        };
+
+        $cursor = $this->collection(self::PRODUCTS_COLLECTION)->find($filter, [
+            'sort'      => ['fechaInserccion' => -1],
+            'batchSize' => self::MAX_RESULTS,
+        ]);
+
+        foreach ($cursor as $doc) {
+            yield $this->normalize($doc);
+        }
     }
 
     private function findMany(array $filter): array

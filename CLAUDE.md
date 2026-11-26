@@ -41,6 +41,12 @@ Catálogo externo: `ExternalCatalogRepositoryInterface` → `MongoCatalogReposit
 
 ---
 
+## Precios y estado frente a Amazon (`sync:amazon-prices`, cada 30 min)
+
+`AmazonPriceSyncService` cruza las publicaciones **activas** con SKU y MCO contra el catálogo (MongoDB que actualiza el cron del scraper: `precio` sin descuento y `estado`, donde `-1` = ya no existe en Amazon). Reglas: Amazon **sube** → recalcula con `PricingService` y actualiza el precio en Mercado Libre; Amazon **baja** → no toca nada y marca `review_status=pending` (`PriceReviewReason::PriceDrop`) con el precio visto; `estado -1` → pausa en Mercado Libre y marca `NotOnAmazon`; nunca reactiva. Sin `base_price` se toma el precio de Amazon como base sin tocar Mercado Libre. Si Mercado Libre rechaza el cambio → `UpdateFailed`. Las revisiones se gestionan en `products/price-reviews` (aplicar sugerido / mantener precio); "mantener" deja `dismissed` y no se vuelve a marcar hasta que cambie el precio de Amazon.
+
+---
+
 ## Versión visible (OBLIGATORIO en cada cambio)
 
 El archivo `VERSION` (raíz de `meli/`) se muestra en el pie del menú lateral (`$appVersion`, compartido por un view composer en `AppServiceProvider` que lee el archivo en cada petición, así no depende de `config:cache`) para comprobar si la web ya tiene los cambios. **Cada vez que se modifique código, subir la versión** (semver): PATCH para correcciones, MINOR para funcionalidades nuevas, MAJOR para cambios incompatibles.
@@ -174,7 +180,7 @@ php artisan sync:customers      # cada hora
 php artisan calculate:statistics # cada hora
 
 # Además: meli:refresh-tokens, sync:questions, sync:post-sale-messages,
-# sync:product-statuses, sync:reputation, sync:dollar (ver routes/console.php)
+# sync:product-statuses, sync:reputation, sync:dollar, sync:amazon-prices (ver routes/console.php)
 # Todos aceptan --store=<id> (y la mayoría --account=<id>)
 
 # Setup inicial (multi-tienda)

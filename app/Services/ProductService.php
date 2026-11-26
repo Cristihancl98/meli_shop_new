@@ -174,6 +174,11 @@ class ProductService
         return $this->productRepository->delete($product);
     }
 
+    public function countPendingPriceReviews(MercadolibreAccount $account): int
+    {
+        return $this->productRepository->countPendingReviews($account->id);
+    }
+
     public function findForAccount(MercadolibreAccount $account, int $id): ?Product
     {
         return $this->productRepository->findForAccount($account->id, $id);

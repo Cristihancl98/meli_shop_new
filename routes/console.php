@@ -18,3 +18,4 @@ Schedule::command('sync:post-sale-messages')->hourly();
 Schedule::command('sync:product-statuses')->everySixHours();
 Schedule::command('sync:reputation')->daily();
 Schedule::command('sync:dollar')->hourly();
+Schedule::command('sync:amazon-prices')->everyThirtyMinutes();

@@ -14,7 +14,16 @@ class PricingService
 
     public function calculate(float $basePrice, float $weight): PriceBreakdownDTO
     {
-        $settings = $this->settingService->pricingSettings();
+        return $this->calculateWith($this->settingService->pricingSettings(), $basePrice, $weight);
+    }
+
+    public function settings(): array
+    {
+        return $this->settingService->pricingSettings();
+    }
+
+    public function calculateWith(array $settings, float $basePrice, float $weight): PriceBreakdownDTO
+    {
 
         if ($basePrice <= 0) {
             return new PriceBreakdownDTO($basePrice, $weight, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, (float) $settings['dollar_price'], 0);

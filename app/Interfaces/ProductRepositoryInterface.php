@@ -13,8 +13,12 @@ interface ProductRepositoryInterface
     public function findByMeliItemIdIncludingArchived(string $meliItemId): ?Product;
     public function findBySku(int $accountId, string $sku): \Illuminate\Database\Eloquent\Collection;
     public function existsSku(int $accountId, string $sku): bool;
+    public function existingSkus(int $accountId, array $skus): array;
     public function findForAccount(int $accountId, int $id): ?Product;
     public function meliItemIdsChunked(int $accountId, int $size, callable $callback): void;
+    public function activeListedWithSkuChunked(int $accountId, int $size, callable $callback): void;
+    public function pendingReviews(int $accountId, int $perPage = 20): \Illuminate\Contracts\Pagination\LengthAwarePaginator;
+    public function countPendingReviews(int $accountId): int;
     public function create(array $data): Product;
     public function update(Product $product, array $data): Product;
     public function delete(Product $product): bool;

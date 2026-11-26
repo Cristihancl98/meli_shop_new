@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\PriceReviewReason;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -41,6 +42,12 @@ class Product extends Model
         'permalink',
         'last_sync',
         'published_at',
+        'review_status',
+        'review_reason',
+        'review_detail',
+        'review_amazon_price',
+        'review_flagged_at',
+        'amazon_checked_at',
     ];
 
     protected $casts = [
@@ -54,6 +61,10 @@ class Product extends Model
         'last_sync'  => 'datetime',
         'published_at' => 'datetime',
         'description_synced' => 'boolean',
+        'review_reason'       => PriceReviewReason::class,
+        'review_amazon_price' => 'decimal:2',
+        'review_flagged_at'   => 'datetime',
+        'amazon_checked_at'   => 'datetime',
     ];
 
     public static function normalizeMeliStatus(?string $status): string

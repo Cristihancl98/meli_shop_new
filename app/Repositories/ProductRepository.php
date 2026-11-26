@@ -88,6 +88,44 @@ class ProductRepository implements ProductRepositoryInterface
         return Product::where('mercadolibre_account_id', $accountId)->where('sku', $sku)->get();
     }
 
+    public function activeListedWithSkuChunked(int $accountId, int $size, callable $callback): void
+    {
+        Product::where('mercadolibre_account_id', $accountId)
+            ->where('status', 'active')
+            ->whereNotNull('meli_item_id')
+            ->whereNotNull('sku')
+            ->where('sku', '!=', '')
+            ->chunkById($size, $callback);
+    }
+
+    public function pendingReviews(int $accountId, int $perPage = 20): \Illuminate\Contracts\Pagination\LengthAwarePaginator
+    {
+        return Product::where('mercadolibre_account_id', $accountId)
+            ->where('review_status', 'pending')
+            ->latest('review_flagged_at')
+            ->paginate($perPage);
+    }
+
+    public function countPendingReviews(int $accountId): int
+    {
+        return Product::where('mercadolibre_account_id', $accountId)->where('review_status', 'pending')->count();
+    }
+
+    public function existingSkus(int $accountId, array $skus): array
+    {
+        if ($skus === []) {
+            return [];
+        }
+
+        return Product::withTrashed()
+            ->where('mercadolibre_account_id', $accountId)
+            ->whereIn('sku', $skus)
+            ->pluck('sku')
+            ->unique()
+            ->values()
+            ->all();
+    }
+
     public function existsSku(int $accountId, string $sku): bool
     {
         return Product::withTrashed()

@@ -27,6 +27,32 @@ class FakeCatalogRepository implements ExternalCatalogRepositoryInterface
         return array_values(array_filter($this->products, fn ($p) => ($p['categoriaMeli'] ?? null) === $meliCategoryId));
     }
 
+    public function findManyBySkus(array $skus): array
+    {
+        $found = [];
+
+        foreach ($skus as $sku) {
+            if ($product = $this->findBySku((string) $sku)) {
+                $found[mb_strtoupper(trim((string) $sku))] = $product;
+            }
+        }
+
+        return $found;
+    }
+
+    public function iterate(string $mode, string $term = ''): iterable
+    {
+        $products = match ($mode) {
+            'title'    => $this->searchByTitle($term),
+            'category' => $this->findByCategory($term),
+            default    => $this->products,
+        };
+
+        usort($products, fn ($a, $b) => strcmp((string) ($b['fechaInserccion'] ?? ''), (string) ($a['fechaInserccion'] ?? '')));
+
+        yield from $products;
+    }
+
     public function searchByTitle(string $title): array
     {
         return array_values(array_filter($this->products, fn ($p) => mb_stripos($p['titulo'] ?? '', $title) !== false));

@@ -145,6 +145,21 @@ class PublishBatchTest extends TestCase
         Http::assertSent(fn (Request $request) => str_starts_with($request->url(), 'https://scraper.test/api/v1/app/scriping/B0WEB'));
     }
 
+    public function test_server_scraper_url_can_differ_from_the_browser_url(): void
+    {
+        config(['services.scraping.server_url' => 'http://scraper-interno:5000']);
+        $this->setSettings(['scraping_url' => 'http://localhost:5000']);
+        Http::fake([
+            'scraper-interno:5000/*' => Http::response(['sku' => 'B0INT', 'titulo' => 'Desde la red interna', 'precio' => 12, 'peso' => 1, 'marca' => 'Web', 'imagenes' => ['https://img.test/int.jpg']]),
+        ]);
+
+        $batch = $this->createBatch('B0INT');
+
+        $this->assertSame(BatchItemStatus::Ready, $this->item($batch, 'B0INT')->status);
+        Http::assertSent(fn (Request $request) => str_starts_with($request->url(), 'http://scraper-interno:5000/api/v1/app/scriping/B0INT'));
+        Http::assertNotSent(fn (Request $request) => str_starts_with($request->url(), 'http://localhost:5000'));
+    }
+
     public function test_correct_button_opens_the_editor_prefilled_and_publishing_marks_the_item(): void
     {
         $batch = $this->createBatch('B0FAIL');

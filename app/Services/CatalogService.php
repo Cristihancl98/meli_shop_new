@@ -52,6 +52,18 @@ class CatalogService
             throw new BusinessRuleException('No hay URL de scraping configurada para esta tienda.');
         }
 
+        return $this->buildScraperUrl($baseUrl, $sku);
+    }
+
+    public function serverScraperUrl(string $sku): string
+    {
+        $override = config('services.scraping.server_url');
+
+        return $override ? $this->buildScraperUrl($override, $sku) : $this->scraperUrl($sku);
+    }
+
+    private function buildScraperUrl(string $baseUrl, string $sku): string
+    {
         return rtrim($baseUrl, '/') . '/' . self::SCRAPING_PATH . rawurlencode(trim($sku));
     }
 
@@ -72,7 +84,7 @@ class CatalogService
 
     public function scrapeSku(string $sku): ?array
     {
-        $url = $this->scraperUrl($sku);
+        $url = $this->serverScraperUrl($sku);
 
         try {
             $response = Http::timeout(self::SCRAPING_TIMEOUT)->get($url);

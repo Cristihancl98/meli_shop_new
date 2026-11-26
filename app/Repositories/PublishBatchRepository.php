@@ -69,7 +69,7 @@ class PublishBatchRepository implements PublishBatchRepositoryInterface
 
     public function statusCounts(PublishBatch $batch): array
     {
-        return $batch->items()->toBase()
+        return $batch->items()->reorder()->toBase()
             ->selectRaw('status, COUNT(*) as total')
             ->groupBy('status')
             ->pluck('total', 'status')

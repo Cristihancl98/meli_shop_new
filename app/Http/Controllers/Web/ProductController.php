@@ -40,9 +40,10 @@ class ProductController extends Controller
         $sorts     = ProductSort::cases();
 
         $importStatus  = $account ? $this->productService->catalogImportStatus($account) : null;
+        $pendingReviews = $account ? $this->productService->countPendingPriceReviews($account) : 0;
         $activeFilters = count(array_diff_key($request->filters(), array_flip(['sort', 'direction'])));
 
-        return view('products.index', compact('products', 'categories', 'account', 'viewMode', 'sort', 'direction', 'sorts', 'importStatus', 'activeFilters'));
+        return view('products.index', compact('products', 'categories', 'account', 'viewMode', 'sort', 'direction', 'sorts', 'importStatus', 'activeFilters', 'pendingReviews'));
     }
 
     public function syncAll(): RedirectResponse
